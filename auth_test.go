@@ -1,6 +1,7 @@
 package auth
 
 import (
+	"fmt"
 	"testing"
 
 	"gorm.io/gorm"
@@ -21,6 +22,10 @@ func TestCreateToken(t *testing.T) {
 	if token == "" {
 
 		t.Errorf("Error: Empty token")
+		
+	} else {
+
+		fmt.Println(token)
 	}
 
 }
@@ -44,7 +49,6 @@ func TestLogin(t *testing.T) {
 	}
 
 	config := Config{
-		UserId:     1,
 		ExpiryTime: 2, // It should be in hours not minutes or seconds
 		SecretKey:  "test@123",
 		DB:         &gorm.DB{},

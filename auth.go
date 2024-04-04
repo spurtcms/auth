@@ -62,7 +62,7 @@ func (auth *Auth) CreateToken() (string, error) {
 
 	atClaims["user_id"] = auth.UserId
 
-	atClaims["expiry_time"] = time.Now().Add(2 * time.Hour).Unix()
+	atClaims["expiry_time"] = time.Now().Add(time.Duration(auth.ExpiryTime) * time.Hour).Unix()
 
 	token := jwt.NewWithClaims(jwt.SigningMethodHS256, atClaims)
 
