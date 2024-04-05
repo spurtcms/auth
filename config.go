@@ -9,6 +9,12 @@ type Config struct {
 	DB         *gorm.DB
 }
 
+type Authentication struct {
+	Token     string
+	SecretKey string
+}
+
+// +build !omit
 type Auth struct {
 	UserId     int
 	ExpiryTime int
