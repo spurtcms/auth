@@ -14,10 +14,11 @@ type Authentication struct {
 	SecretKey string
 }
 
-// +build !omit
 type Auth struct {
 	UserId     int
 	ExpiryTime int
 	SecretKey  string
 	DBString   *gorm.DB
+	AuthFlg       bool
+	PermissionFlg bool
 }

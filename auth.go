@@ -52,6 +52,8 @@ func (auth *Auth) Checklogin(Username string, Password string) (string, int, err
 		return "", 0, err
 	}
 
+	auth.UserId = user.Id
+
 	return token, user.Id, nil
 }
 
@@ -70,7 +72,8 @@ func (auth *Auth) CreateToken() (string, error) {
 }
 
 // verify token
-func VerifyToken(token string, secret string) (userid int, err error) {
+func (auth *Auth) VerifyToken(token string, secret string) (userid int, err error) {
+
 	Claims := jwt.MapClaims{}
 
 	tkn, err := jwt.ParseWithClaims(token, Claims, func(token *jwt.Token) (interface{}, error) {
@@ -92,6 +95,8 @@ func VerifyToken(token string, secret string) (userid int, err error) {
 	}
 
 	usrid := Claims["user_id"]
+
+	auth.AuthFlg = true
 
 	return int(usrid.(float64)), nil
 }
