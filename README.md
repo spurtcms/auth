@@ -69,4 +69,4 @@ func (auth *Auth) VerifyToken(token string, secret string) (userid int, err erro
 	
 ```
 # Getting help
-If you encounter a problem with the package,please refer [Please refer [(https://www.spurtcms.com/documentation/cms-admin)] or you can create a new Issue in this repo[https://github.com/spurtcms/auth/blob/main/auth.go]. 
+If you encounter a problem with the package,please refer [Please refer [(https://www.spurtcms.com/documentation/cms-admin)] or you can create a new Issue in this repo[(https://github.com/spurtcms/auth/issues)]. 
