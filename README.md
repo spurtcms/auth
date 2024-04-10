@@ -1,7 +1,7 @@
 # Auth Package
 
 The auth package is an independent module that can be individually enabled and configured to suit the needs of the website owner.
-One may use the spurtCMS auth package, or if the current application already includes it, there's the option to bypass our auth package, retaining the existing auth package setup, and continue using our other packages without hassle.
+One may use the spurtCMS auth package, or if your current golang application already includes it, there's the option to bypass our auth package, retaining the existing auth package setup, and continue using our other packages without hassle.
 
 
 # Description
