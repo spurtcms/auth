@@ -1,7 +1,6 @@
 package auth
 
 import (
-	"errors"
 	"fmt"
 	"log"
 	"time"
@@ -41,7 +40,7 @@ func (auth *Auth) Checklogin(Username string, Password string) (string, int, err
 
 	if passerr != nil || passerr == bcrypt.ErrMismatchedHashAndPassword {
 
-		return "", 0, errors.New("invalid password")
+		return "", 0, ErrorPassword
 
 	}
 
@@ -72,7 +71,7 @@ func (auth *Auth) CreateToken() (string, error) {
 }
 
 // verify token
-func (auth *Auth) VerifyToken(token string, secret string) (userid int, err error) {
+func (auth *Auth) VerifyToken(token string, secret string, currentTime int64) (userid int, err error) {
 
 	Claims := jwt.MapClaims{}
 
@@ -83,15 +82,22 @@ func (auth *Auth) VerifyToken(token string, secret string) (userid int, err erro
 	if err != nil {
 		if err == jwt.ErrSignatureInvalid {
 			fmt.Println(err)
-			return 0, errors.New("invalid token")
+			return 0, ErrorToken
 		}
 
-		return 0, errors.New("invalid token")
+		return 0, ErrorToken
 	}
 
 	if !tkn.Valid {
 		fmt.Println(tkn)
-		return 0, errors.New("invalid token")
+		return 0, ErrorToken
+	}
+
+	expiryTime := Claims["expiry_time"]
+
+	if currentTime > int64(expiryTime.(float64)) {
+
+		return 0, ErrorTokenExpiry
 	}
 
 	usrid := Claims["user_id"]
