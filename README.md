@@ -14,61 +14,47 @@ This Auth package stands as a versatile, standalone module, tailored for seamles
 
 # Installation
 
-This package makes it possible to use a JSON Web Token (JWT) to securely authenticate a valid user requesting access to your spurtCMS.
-JSON Web Tokens are an open, industry standard RFC 7519 method for representing claims securely between two parties.
+``` bash
+go get github.com/spurtcms/auth
+```
 
-# Checklogin()
 
-The checklogin function takes a username and password,checks if they are authorized from the database.
+- Setup the Auth config
+``` bash
+config := Config{
+		UserId:     1,
+		ExpiryTime: 2, // It should be in hours not minutes or seconds
+		SecretKey:  "test@123",
+		DB:         &gorm.DB{},
+	}
 
-```bash
-func (auth *Auth) Checklogin(Username string, Password string) (string, int, error) {
+	auth := AuthSetup(config)
+```
 
-	username := Username
 
-	password := Password
+# Usage Example
+``` bash
+func main (){
 
-	user, err := CheckLogin(username, password, auth.DBString)
-
-	if err != nil {
-
-		log.Println(err)
-
+		config := Config{
+			UserId:     1,
+			ExpiryTime: 2, // It should be in hours not minutes or seconds
+			SecretKey:  "test@123",
+			DB:         &gorm.DB{},
+		}
+		
+		auth := AuthSetup(config)
+		
+		//create token - generates new  JWtoken
+		token, _ := auth.CreateToken()
+		
+		//checklogin - verifies user credentials
+		token, userid,err :=auth.Checklogin("Username", "Password")
+		
+		//verifytoken - parses and verifies the token generated
+		userid, err :=	auth.VerifyToken("token","secretkey","currenttime")
 	}
 ```
 
-# Generates a token
-
-This CreateToken() creates a JWT with some claims(e.g.,user information,expiration time) and signs it with a secret key
-
-```bash
-func (auth *Auth) CreateToken() (string, error) {
-
-	atClaims := jwt.MapClaims{}
-
-	atClaims["user_id"] = auth.UserId
-
-	atClaims["expiry_time"] = time.Now().Add(time.Duration(auth.ExpiryTime) * time.Hour).Unix()
-
-	token := jwt.NewWithClaims(jwt.SigningMethodHS256, atClaims)
-
-	return token.SignedString([]byte(auth.SecretKey))
-}
-```
-
-# Verifies a token
-
-This code verifies the token generated and is used to parse and verify the token
-
-```bash
-func (auth *Auth) VerifyToken(token string, secret string) (userid int, err error) {
-
-	Claims := jwt.MapClaims{}
-
-	tkn, err := jwt.ParseWithClaims(token, Claims, func(token *jwt.Token) (interface{}, error) {
-		return []byte(secret), nil
-	})
-	
-```
 # Getting help
-If you encounter a problem with the package,please refer [Please refer [(https://www.spurtcms.com/documentation/cms-admin)] or you can create a new Issue in this repo[https://github.com/spurtcms/auth/issues]. 
+If you encounter a problem with the package,please refer [Please refer (https://www.spurtcms.com/documentation/cms-admin) or you can create a new Issue in this repo (https://github.com/spurtcms/auth/issues). 
