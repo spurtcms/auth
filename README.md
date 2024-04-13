@@ -56,7 +56,7 @@ func (auth *Auth) CreateToken() (string, error) {
 }
 ```
 
-# verifies a token
+# Verifies a token
 
 This code verifies the token generated and is used to parse and verify the token
 
