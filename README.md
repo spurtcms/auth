@@ -1,15 +1,11 @@
 # Auth Package
 
-The auth package is an independent module that can be individually enabled and configured to suit the needs of the website owner.
-One may use the spurtCMS auth package, or if your current golang application already includes it, there's the option to bypass our auth package, retaining the existing auth package setup, and continue using our other packages without hassle.
-
+This Auth package stands as a versatile, standalone module, tailored for seamless integration into any Golang project, promising flexibility and convenience. It isn't confined solely to any particular platform; it offers full freedom to incorporate it into any Golang platform. We have seamlessly integrated it with the spurtCMS admin system, ensuring a smooth integration process.
 
 # Description
 
 This package makes it possible to use a JSON Web Token (JWT) to securely authenticate a valid user requesting access to your spurtCMS.
 JSON Web Tokens are an open, industry standard RFC 7519 method for representing claims securely between two parties.
-
-![Screenshot of spurtCMS log in screen](https://www.spurtcms.com/spurtcms-starter-template.jpg)
 
 
 
@@ -23,6 +19,8 @@ JSON Web Tokens are an open, industry standard RFC 7519 method for representing 
 - Verifies the validity of tokens using the provided jwtSecret
 
 # Check UserName Password
+
+The checklogin function takes a username and password,checks if they are valid from the database.
 
 ```bash
 func (auth *Auth) Checklogin(Username string, Password string) (string, int, error) {
@@ -40,7 +38,9 @@ func (auth *Auth) Checklogin(Username string, Password string) (string, int, err
 	}
 ```
 
-# creates a token
+# Generates a token
+
+This creates a JWT with some claims(e.g.,user information,expiration time) and signs it with a secret key
 
 ```bash
 func (auth *Auth) CreateToken() (string, error) {
@@ -58,6 +58,9 @@ func (auth *Auth) CreateToken() (string, error) {
 ```
 
 # verifies a token
+
+This code verifies the token generated and is used to parse and verify the token
+
 ```bash
 func (auth *Auth) VerifyToken(token string, secret string) (userid int, err error) {
 
@@ -69,4 +72,4 @@ func (auth *Auth) VerifyToken(token string, secret string) (userid int, err erro
 	
 ```
 # Getting help
-If you encounter a problem with the package,please refer [Please refer [(https://www.spurtcms.com/documentation/cms-admin)] or you can create a new Issue in this repo[(https://github.com/spurtcms/auth/issues)]. 
+If you encounter a problem with the package,please refer [Please refer [(https://www.spurtcms.com/documentation/cms-admin)] or you can create a new Issue in this repo[https://github.com/spurtcms/auth/issues]. 
