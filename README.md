@@ -17,9 +17,9 @@ This Auth package stands as a versatile, standalone module, tailored for seamles
 This package makes it possible to use a JSON Web Token (JWT) to securely authenticate a valid user requesting access to your spurtCMS.
 JSON Web Tokens are an open, industry standard RFC 7519 method for representing claims securely between two parties.
 
-# Check UserName Password
+# Checklogin()
 
-The checklogin function takes a username and password,checks if they are valid from the database.
+The checklogin function takes a username and password,checks if they are authorized from the database.
 
 ```bash
 func (auth *Auth) Checklogin(Username string, Password string) (string, int, error) {
@@ -39,7 +39,7 @@ func (auth *Auth) Checklogin(Username string, Password string) (string, int, err
 
 # Generates a token
 
-This creates a JWT with some claims(e.g.,user information,expiration time) and signs it with a secret key
+This CreateToken() creates a JWT with some claims(e.g.,user information,expiration time) and signs it with a secret key
 
 ```bash
 func (auth *Auth) CreateToken() (string, error) {
