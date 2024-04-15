@@ -12,11 +12,14 @@ import (
 // AuthSetup used initialize auth configruation
 func AuthSetup(conf Config) *Auth {
 
+	Migration(conf.DB)
+
 	return &Auth{
 		UserId:     conf.UserId,
 		ExpiryTime: conf.ExpiryTime,
 		SecretKey:  conf.SecretKey,
-		DBString:   conf.DB,
+		DB:         conf.DB,
+		ExpiryFlg:  conf.ExpiryFlg,
 	}
 
 }
@@ -28,7 +31,7 @@ func (auth *Auth) Checklogin(Username string, Password string) (string, int, err
 
 	password := Password
 
-	user, err := CheckLogin(username, password, auth.DBString)
+	user, err := CheckLogin(username, password, auth.DB)
 
 	if err != nil {
 
@@ -63,7 +66,7 @@ func (auth *Auth) CreateToken() (string, error) {
 
 	atClaims["user_id"] = auth.UserId
 
-	atClaims["expiry_time"] = time.Now().Add(time.Duration(auth.ExpiryTime) * time.Hour).Unix()
+	atClaims["expiry_time"] = time.Now().UTC().Add(time.Duration(auth.ExpiryTime) * time.Hour)
 
 	token := jwt.NewWithClaims(jwt.SigningMethodHS256, atClaims)
 
@@ -71,7 +74,7 @@ func (auth *Auth) CreateToken() (string, error) {
 }
 
 // verify token
-func (auth *Auth) VerifyToken(token string, secret string, currentTime int64) (userid int, err error) {
+func (auth *Auth) VerifyToken(token string, secret string) (userid int, err error) {
 
 	Claims := jwt.MapClaims{}
 
@@ -93,11 +96,24 @@ func (auth *Auth) VerifyToken(token string, secret string, currentTime int64) (u
 		return 0, ErrorToken
 	}
 
-	expiryTime := Claims["expiry_time"]
+	if auth.AuthFlg {
 
-	if currentTime > int64(expiryTime.(float64)) {
+		expiryTime := Claims["expiry_time"]
 
-		return 0, ErrorTokenExpiry
+		t, ok := expiryTime.(time.Time)
+
+		if !ok {
+
+			fmt.Println("Could not convert interface to time.Time")
+
+			return 0, ErrorConvertTime
+		}
+
+		if t.After(time.Now().UTC()) {
+
+			return 0, ErrorTokenExpiry
+
+		}
 	}
 
 	usrid := Claims["user_id"]
@@ -105,4 +121,73 @@ func (auth *Auth) VerifyToken(token string, secret string, currentTime int64) (u
 	auth.AuthFlg = true
 
 	return int(usrid.(float64)), nil
+}
+
+// Check User Permission
+func (permission *Auth) IsGranted(modulename string, permisison Action) (bool, error) {
+
+	if permission.RoleId != 1 || permission.RoleName != "Super Admin" { //if not an admin user
+
+		var modid int
+
+		var module TblModule
+
+		var modpermissions TblModulePermission
+
+		if err := permission.DB.Model(TblModule{}).Where("module_name=? and parent_id !=0", modulename).Find(&module).Error; err != nil {
+
+			return false, err
+		}
+
+		if err1 := permission.DB.Model(TblModulePermission{}).Where("display_name=?", modulename).Find(&modpermissions).Error; err1 != nil {
+
+			return false, err1
+		}
+
+		if module.Id != 0 {
+
+			modid = module.Id
+
+		} else {
+
+			modid = modpermissions.Id
+		}
+
+		var modulepermission []TblModulePermission
+
+		if permisison == "CRUD" {
+
+			if err := permission.DB.Model(TblModulePermission{}).Where("id=? and (full_access_permission=1 or display_name='View' or display_name='Update' or  display_name='Create' or display_name='Delete')", modid).Find(&modulepermission).Error; err != nil {
+
+				return false, err
+			}
+
+		} else {
+
+			if err := permission.DB.Model(TblModulePermission{}).Where("module_id=? and display_name=?", modid, permisison).Find(&modulepermission).Error; err != nil {
+
+				return false, err
+			}
+
+		}
+
+		for _, val := range modulepermission {
+
+			var rolecheck TblRolePermission
+
+			if err := permission.DB.Model(TblRolePermission{}).Where("permission_id=? and role_id=?", val.Id, permission.RoleId).First(&rolecheck).Error; err != nil {
+
+				return false, err
+			}
+
+		}
+
+		permission.PermissionFlg = true
+
+	}
+
+	permission.PermissionFlg = true
+
+	return true, nil
+
 }

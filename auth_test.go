@@ -11,7 +11,8 @@ func TestCreateToken(t *testing.T) {
 
 	config := Config{
 		UserId:     1,
-		ExpiryTime: 2, // It should be in hours not minutes or seconds
+		ExpiryTime: 2,
+		ExpiryFlg:  true,
 		SecretKey:  "test@123",
 	}
 
@@ -22,7 +23,7 @@ func TestCreateToken(t *testing.T) {
 	if token == "" {
 
 		t.Errorf("Error: Empty token")
-		
+
 	} else {
 
 		fmt.Println(token)

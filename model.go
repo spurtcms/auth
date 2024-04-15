@@ -6,7 +6,7 @@ import (
 	"gorm.io/gorm"
 )
 
-type TblUser struct {
+type tbluser struct {
 	Id               int `gorm:"primaryKey;auto_increment"`
 	Uuid             string
 	FirstName        string
@@ -36,11 +36,11 @@ func IsDeleted(db *gorm.DB) *gorm.DB {
 }
 
 // check db userlogin
-func CheckLogin(username string, Password string, db *gorm.DB) (user TblUser, err error) {
+func CheckLogin(username string, Password string, db *gorm.DB) (user tbluser, err error) {
 
 	if err := db.Table("tbl_users").Scopes(IsDeleted).Where("username = ?", username).First(&user).Error; err != nil {
 
-		return TblUser{}, err
+		return tbluser{}, err
 
 	}
 
