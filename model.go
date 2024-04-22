@@ -30,6 +30,16 @@ type tbluser struct {
 	DeletedBy        int       `gorm:"DEFAULT:NULL"`
 }
 
+type MemberLoginCheck struct {
+	Username             string
+	Email                string
+	Password             string
+	UsernameWithOTP      bool
+	EmailWithOTP         bool
+	UsernameWithPassword bool
+	EmailwithPassword    bool
+}
+
 // soft delete check
 func IsDeleted(db *gorm.DB) *gorm.DB {
 	return db.Where("is_deleted = 0")
@@ -45,4 +55,26 @@ func CheckLogin(username string, Password string, db *gorm.DB) (user tbluser, er
 	}
 
 	return user, nil
+}
+
+// check email with password
+func CheckMemberLoginWithEmail(email string, username string, DB *gorm.DB) (member TblMember, err error) {
+
+	if email != "" {
+
+		if err := DB.Model(TblMember{}).Where("is_deleted =0 and email=?", email).First(&member).Error; err != nil {
+
+			return TblMember{}, err
+		}
+
+	} else if username != "" {
+
+		if err := DB.Model(TblMember{}).Where("is_deleted =0 and username=? ", username).First(&member).Error; err != nil {
+
+			return TblMember{}, err
+		}
+	
+	}
+
+	return member, nil
 }

@@ -6,7 +6,8 @@ var (
 	ErrorPassword    = errors.New("invalid password")
 	ErrorToken       = errors.New("invalid token")
 	ErrorTokenExpiry = errors.New("token expired")
-	ErrorConvertTime = errors.New("Could not convert interface to time.Time")
+	ErrorConvertTime = errors.New("could not convert interface to time.Time")
+	ErrorMemberLogin = errors.New("select any one of the config for member login")
 )
 
 type Action string
