@@ -5,7 +5,7 @@ import "gorm.io/gorm"
 // Check User Permission
 func (permission *Auth) IsGranted(modulename string, permisison Action) (bool, error) {
 
-	if permission.RoleId != 1 || permission.RoleName != "Super Admin" { //if not an admin user
+	if permission.RoleId != 1 { //if not an admin user
 
 		var modid int
 
@@ -13,7 +13,7 @@ func (permission *Auth) IsGranted(modulename string, permisison Action) (bool, e
 
 		var modpermissions TblModulePermission
 
-		if err := permission.DB.Model(TblModule{}).Where("module_name=? and parent_id !=0", modulename).Find(&module).Error; err != nil {
+		if err := permission.DB.Model(TblModule{}).Where("module_name=? and parent_id !=0", modulename).First(&module).Error; err != nil {
 
 			return false, err
 		}
@@ -36,14 +36,14 @@ func (permission *Auth) IsGranted(modulename string, permisison Action) (bool, e
 
 		if permisison == "CRUD" {
 
-			if err := permission.DB.Model(TblModulePermission{}).Where("id=? and (full_access_permission=1 or display_name='View' or display_name='Update' or  display_name='Create' or display_name='Delete')", modid).Find(&modulepermission).Error; err != nil {
+			if err := permission.DB.Model(TblModulePermission{}).Where("module_id=? and (full_access_permission=1 or display_name='View' or display_name='Update' or  display_name='Create' or display_name='Delete')", modid).Find(&modulepermission).Error; err != nil {
 
 				return false, err
 			}
 
 		} else {
 
-			if err := permission.DB.Model(TblModulePermission{}).Where("module_id=? and display_name=?", modid, permisison).Find(&modulepermission).Error; err != nil {
+			if err := permission.DB.Model(TblModulePermission{}).Where("module_id=? and display_name=?", modid, permisison).First(&modulepermission).Error; err != nil {
 
 				return false, err
 			}
