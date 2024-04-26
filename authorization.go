@@ -1,5 +1,7 @@
 package auth
 
+import "gorm.io/gorm"
+
 // Check User Permission
 func (permission *Auth) IsGranted(modulename string, permisison Action) (bool, error) {
 
@@ -52,7 +54,17 @@ func (permission *Auth) IsGranted(modulename string, permisison Action) (bool, e
 
 			var rolecheck TblRolePermission
 
-			if err := permission.DB.Model(TblRolePermission{}).Where("permission_id=? and role_id=?", val.Id, permission.RoleId).First(&rolecheck).Error; err != nil {
+			query := permission.DB.Model(TblRolePermission{}).Where("permission_id=? and role_id=?", val.Id, permission.RoleId).First(&rolecheck)
+
+			if query.Error == gorm.ErrRecordNotFound {
+
+				permission.PermissionFlg = true
+
+				return false, ErrorUnauthorized
+
+			}
+
+			if err := query.Error; err != nil {
 
 				return false, err
 			}

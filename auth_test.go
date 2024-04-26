@@ -2,19 +2,52 @@ package auth
 
 import (
 	"fmt"
+	"log"
 	"testing"
 
+	"gorm.io/driver/postgres"
 	"gorm.io/gorm"
 )
 
+func DBSetup() (*gorm.DB, error) {
+
+	dbConfig := map[string]string{
+		"username": "postgres",
+		"password": "123",
+		"host":     "localhost",
+		"port":     "5432",
+		"dbname":   "spurt-cms",
+	}
+
+	db, err := gorm.Open(postgres.New(postgres.Config{
+		DSN: "user=" + dbConfig["username"] + " password=" + dbConfig["password"] +
+			" dbname=" + dbConfig["dbname"] + " host=" + dbConfig["host"] +
+			" port=" + dbConfig["port"] + " sslmode=disable TimeZone=Asia/Kolkata",
+	}), &gorm.Config{})
+	if err != nil {
+		log.Fatal("Failed to connect to database:", err)
+	}
+	if err != nil {
+		return nil, err
+	}
+
+	return db, nil
+}
+
+
 func TestCreateToken(t *testing.T) {
 
+	db, _ := DBSetup()
+	
 	config := Config{
 		UserId:     1,
 		ExpiryTime: 2,
 		ExpiryFlg:  true,
 		SecretKey:  "test@123",
+		DB:         db,
 	}
+
+	log.Println("config",config)
 
 	auth := AuthSetup(config)
 
@@ -26,12 +59,14 @@ func TestCreateToken(t *testing.T) {
 
 	} else {
 
-		fmt.Println(token)
+		fmt.Println("token", token)
 	}
 
 }
 
 func TestLogin(t *testing.T) {
+
+	db, _ := DBSetup()
 
 	type TestCase struct {
 		Username string
@@ -47,12 +82,16 @@ func TestLogin(t *testing.T) {
 			Username: "Admin",
 			Password: "",
 		},
+		{
+			Username: "",
+			Password: "Admin@123",
+		},
 	}
 
 	config := Config{
 		ExpiryTime: 2, // It should be in hours not minutes or seconds
 		SecretKey:  "test@123",
-		DB:         &gorm.DB{},
+		DB:         db,
 	}
 
 	auth := AuthSetup(config)
@@ -61,9 +100,32 @@ func TestLogin(t *testing.T) {
 
 		t.Run("checklogin", func(t *testing.T) {
 
-			auth.Checklogin(val.Username, val.Password)
+			_, _, err := auth.Checklogin(val.Username, val.Password)
+
+			log.Println( err)
 
 		})
 	}
 
+}
+
+func TestVerifyToken(t *testing.T) {
+
+	db, _ := DBSetup()
+
+	config := Config{
+		UserId:     1,
+		ExpiryTime: 2,
+		ExpiryFlg:  true,
+		SecretKey:  "test@123",
+		DB:         db,
+	}
+
+	auth := AuthSetup(config)
+
+	token, _ := auth.CreateToken()
+
+	_, err1 := auth.VerifyToken(token, "test@123")
+
+	log.Println(err1)
 }
