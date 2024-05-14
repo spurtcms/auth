@@ -47,14 +47,16 @@ func (auth *Auth) Checklogin(Username string, Password string) (string, int, err
 
 	}
 
+	auth.UserId = user.Id
+
+	auth.RoleId = user.RoleId
+
 	token, err := auth.CreateToken()
 
 	if err != nil {
 
 		return "", 0, err
 	}
-
-	auth.UserId = user.Id
 
 	return token, user.Id, nil
 }
@@ -65,6 +67,8 @@ func (auth *Auth) CreateToken() (string, error) {
 	atClaims := jwt.MapClaims{}
 
 	atClaims["user_id"] = auth.UserId
+
+	atClaims["role_id"] = auth.RoleId
 
 	atClaims["expiry_time"] = time.Now().UTC().Add(time.Duration(auth.ExpiryTime) * time.Hour)
 
@@ -149,12 +153,8 @@ func (auth *Auth) CheckMemberLogin(memberlogin MemberLoginCheck) error {
 
 	} else if memberlogin.EmailWithOTP {
 
-		
-
 	} else if memberlogin.UsernameWithOTP {
 
-		
-		
 	}
 
 	fmt.Println(member)
