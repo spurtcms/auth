@@ -72,6 +72,8 @@ func (auth *Auth) CreateToken() (string, error) {
 
 	atClaims["expiry_time"] = time.Now().UTC().Add(time.Duration(auth.ExpiryTime) * time.Hour)
 
+	atClaims["login_type"] = ""
+
 	token := jwt.NewWithClaims(jwt.SigningMethodHS256, atClaims)
 
 	return token.SignedString([]byte(auth.SecretKey))

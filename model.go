@@ -34,6 +34,7 @@ type MemberLoginCheck struct {
 	Username             string
 	Email                string
 	Password             string
+	OTP                  int
 	UsernameWithOTP      bool
 	EmailWithOTP         bool
 	UsernameWithPassword bool
@@ -73,7 +74,7 @@ func CheckMemberLoginWithEmail(email string, username string, DB *gorm.DB) (memb
 
 			return TblMember{}, err
 		}
-	
+
 	}
 
 	return member, nil
