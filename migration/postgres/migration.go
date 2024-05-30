@@ -1,4 +1,4 @@
-package auth
+package postgres
 
 import (
 	"time"
@@ -45,6 +45,7 @@ type TblModule struct {
 	CreatedBy        int       `gorm:"type:integer"`
 	CreatedOn        time.Time `gorm:"type:timestamp without time zone"`
 	MenuType         string    `gorm:"type:character varying"`
+	GroupFlg         int       `gorm:"type:integer"`
 }
 
 type TblModulePermission struct {
@@ -139,7 +140,7 @@ type TblMemberProfile struct {
 	DeletedOn       time.Time         `gorm:"type:timestamp without time zone;DEFAULT:NULL"`
 }
 
-func Migration(db *gorm.DB) {
+func MigrationTables(db *gorm.DB) {
 
 	if err := db.AutoMigrate(
 		&TblModule{},

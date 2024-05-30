@@ -2,14 +2,22 @@ package auth
 
 import "gorm.io/gorm"
 
+type Type string
+
+const ( //for permission check
+	Postgres Type = "postgres"
+	Mysql    Type = "mysql"
+)
+
 type Config struct {
-	UserId     int      //(optional) if you use login function this userid no need
-	ExpiryTime int      //It should be an hour not a mintues, UTC time only
-	ExpiryFlg  bool     //if you want to check token expiry time enable expiryflg true otherwise expirytime not check
-	SecretKey  string   //jwt secretkey
-	DB         *gorm.DB //database connection
-	RoleId     int
-	RoleName   string
+	UserId       int      //(optional) if you use login function this userid no need
+	ExpiryTime   int      //It should be an hour not a mintues, UTC time only
+	ExpiryFlg    bool     //if you want to check token expiry time enable expiryflg true otherwise expirytime not check
+	SecretKey    string   //jwt secretkey
+	DB           *gorm.DB //database connection
+	DataBaseType Type
+	RoleId       int
+	RoleName     string
 }
 
 type Authentication struct {

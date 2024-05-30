@@ -6,13 +6,14 @@ import (
 	"time"
 
 	"github.com/golang-jwt/jwt"
+	"github.com/spurtcms/auth/migration"
 	"golang.org/x/crypto/bcrypt"
 )
 
 // AuthSetup used initialize auth configruation
 func AuthSetup(conf Config) *Auth {
 
-	Migration(conf.DB)
+	migration.AutoMigration(conf.DB, conf.DataBaseType)
 
 	return &Auth{
 		UserId:     conf.UserId,
