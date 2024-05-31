@@ -37,6 +37,8 @@ func (auth *Auth) Checklogin(Username string, Password string) (string, int, err
 
 		fmt.Println(err)
 
+		return "", 0, err
+
 	}
 
 	passerr := bcrypt.CompareHashAndPassword([]byte(user.Password), []byte(password))
