@@ -2,7 +2,6 @@ package auth
 
 import (
 	"fmt"
-	"log"
 	"time"
 
 	"github.com/golang-jwt/jwt"
@@ -36,7 +35,7 @@ func (auth *Auth) Checklogin(Username string, Password string) (string, int, err
 
 	if err != nil {
 
-		log.Println(err)
+		fmt.Println(err)
 
 	}
 
@@ -103,7 +102,7 @@ func (auth *Auth) VerifyToken(token string, secret string) (userid int, err erro
 		return 0, ErrorToken
 	}
 
-	if auth.AuthFlg {
+	if auth.ExpiryFlg {
 
 		expiryTime := Claims["expiry_time"]
 
