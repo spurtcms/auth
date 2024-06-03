@@ -41,6 +41,11 @@ func (auth *Auth) Checklogin(Username string, Password string) (string, int, err
 
 	}
 
+	if user.IsActive == 0 {
+
+		return "", 0, ErrorInactive
+	}
+
 	passerr := bcrypt.CompareHashAndPassword([]byte(user.Password), []byte(password))
 
 	if passerr != nil || passerr == bcrypt.ErrMismatchedHashAndPassword {

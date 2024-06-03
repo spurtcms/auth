@@ -9,6 +9,7 @@ var (
 	ErrorConvertTime  = errors.New("could not convert interface to time.Time")
 	ErrorMemberLogin  = errors.New("select any one of the config for member login")
 	ErrorUnauthorized = errors.New("Unauthorized")
+	ErrorInactive     = errors.New("user disabled please contact admin")
 )
 
 type Action string
