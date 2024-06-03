@@ -1,6 +1,10 @@
 package auth
 
-import "gorm.io/gorm"
+import (
+	"fmt"
+
+	"gorm.io/gorm"
+)
 
 // Check User Permission
 func (permission *Auth) IsGranted(modulename string, permisison Action) (bool, error) {
@@ -15,7 +19,7 @@ func (permission *Auth) IsGranted(modulename string, permisison Action) (bool, e
 
 		if err := permission.DB.Model(TblModule{}).Where("module_name=? and parent_id !=0", modulename).First(&module).Error; err != nil {
 
-			return false, err
+			fmt.Println(err)
 		}
 
 		if err1 := permission.DB.Model(TblModulePermission{}).Where("display_name=?", modulename).Find(&modpermissions).Error; err1 != nil {
@@ -48,6 +52,11 @@ func (permission *Auth) IsGranted(modulename string, permisison Action) (bool, e
 				return false, err
 			}
 
+		}
+
+		if len(modulepermission) == 0 {
+
+			return false, nil
 		}
 
 		for _, val := range modulepermission {
