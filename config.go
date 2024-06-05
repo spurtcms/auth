@@ -35,4 +35,5 @@ type Auth struct {
 	PermissionFlg bool
 	RoleId        int
 	RoleName      string
+	DataAccess    int
 }
