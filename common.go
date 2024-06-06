@@ -10,6 +10,7 @@ var (
 	ErrorMemberLogin  = errors.New("select any one of the config for member login")
 	ErrorUnauthorized = errors.New("Unauthorized")
 	ErrorInactive     = errors.New("user disabled please contact admin")
+	ErrorInvalidOTP   = errors.New("invalid OTP")
 )
 
 type Action string

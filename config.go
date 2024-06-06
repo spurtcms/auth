@@ -18,6 +18,7 @@ type Config struct {
 	DataBaseType Type
 	RoleId       int
 	RoleName     string
+	OTPAttempt   int //how many times otp attempt
 }
 
 type Authentication struct {

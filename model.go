@@ -108,13 +108,23 @@ type TblRolePermission struct {
 	CreatedOn    time.Time
 }
 
+type OTP struct {
+	Length   int
+	Duration time.Duration //minutes only
+	MemberId int
+}
+
+type authmodel struct{}
+
+var Authmodel authmodel
+
 // soft delete check
 func IsDeleted(db *gorm.DB) *gorm.DB {
 	return db.Where("is_deleted = 0")
 }
 
 // check db userlogin
-func CheckLogin(username string, Password string, db *gorm.DB) (user tbluser, err error) {
+func (auth authmodel) CheckLogin(username string, Password string, db *gorm.DB) (user tbluser, err error) {
 
 	if err := db.Table("tbl_users").Scopes(IsDeleted).Where("username = ?", username).First(&user).Error; err != nil {
 
@@ -126,7 +136,7 @@ func CheckLogin(username string, Password string, db *gorm.DB) (user tbluser, er
 }
 
 // check email with password
-func CheckMemberLoginWithEmail(email string, username string, DB *gorm.DB) (member TblMember, err error) {
+func (auth authmodel) CheckMemberLoginWithEmail(email string, username string, DB *gorm.DB) (member TblMember, err error) {
 
 	if email != "" {
 
@@ -145,4 +155,44 @@ func CheckMemberLoginWithEmail(email string, username string, DB *gorm.DB) (memb
 	}
 
 	return member, nil
+}
+
+func (auth authmodel) CheckEmailWithOtp(email string, DB *gorm.DB) (member TblMember, err error) {
+
+	if err := DB.Model(TblMember{}).Where("is_deleted = 0 and email = ?", email).First(&member).Error; err != nil {
+
+		return TblMember{}, err
+	}
+
+	return member, nil
+}
+
+func (auth authmodel) CheckUsernameWithOtp(username string, DB *gorm.DB) (member TblMember, err error) {
+
+	if err := DB.Model(TblMember{}).Where("is_deleted = 0 and username = ?", username).First(&member).Error; err != nil {
+
+		return TblMember{}, err
+	}
+
+	return member, nil
+}
+
+func (auth authmodel) UpdateMemberOtp(id int, otp int, otpExpiry string, DB *gorm.DB) error {
+
+	if err := DB.Table("tbl_members").Where("id=?", id).Updates(map[string]interface{}{
+		"otp": otp, "otp_expiry": otpExpiry,
+	}).Error; err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func (auth authmodel) GetMemberDetailsByMemberId(MemberDetails *TblMember, memberId int, DB *gorm.DB) error {
+
+	if err := DB.Table("tbl_members").Where("is_deleted=0 and id = ?", memberId).First(&MemberDetails).Error; err != nil {
+		return err
+	}
+
+	return nil
 }
