@@ -34,11 +34,10 @@ func DBSetup() (*gorm.DB, error) {
 	return db, nil
 }
 
-
 func TestCreateToken(t *testing.T) {
 
 	db, _ := DBSetup()
-	
+
 	config := Config{
 		UserId:     1,
 		ExpiryTime: 2,
@@ -47,7 +46,7 @@ func TestCreateToken(t *testing.T) {
 		DB:         db,
 	}
 
-	log.Println("config",config)
+	log.Println("config", config)
 
 	auth := AuthSetup(config)
 
@@ -102,7 +101,7 @@ func TestLogin(t *testing.T) {
 
 			_, _, err := auth.Checklogin(val.Username, val.Password)
 
-			log.Println( err)
+			log.Println(err)
 
 		})
 	}
@@ -125,7 +124,7 @@ func TestVerifyToken(t *testing.T) {
 
 	token, _ := auth.CreateToken()
 
-	_, err1 := auth.VerifyToken(token, "test@123")
+	_, _, err1 := auth.VerifyToken(token, "test@123")
 
 	log.Println(err1)
 }

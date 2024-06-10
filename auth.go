@@ -282,7 +282,7 @@ func (auth *Auth) MemberVerifyToken(token string, secret string) (memberid int, 
 }
 
 // update otp
-func (auth *Auth) UpdateMemberOTP(otp OTP) error {
+func (auth *Auth) UpdateMemberOTP(otp OTP) (expiryTime time.Time, err error) {
 
 	//generate otp
 	generateotp := func() int {
@@ -298,11 +298,11 @@ func (auth *Auth) UpdateMemberOTP(otp OTP) error {
 		return otpint
 	}
 
-	otp_expiry_time := time.Now().UTC().Add(otp.Duration * time.Minute).Format("2006-01-02 15:04:05")
+	otp_expiry_time := time.Now().UTC().Add(otp.Duration)
 
-	if err := Authmodel.UpdateMemberOtp(otp.MemberId, generateotp(), otp_expiry_time, auth.DB); err != nil {
-		return err
+	if err := Authmodel.UpdateMemberOtp(otp.MemberId, generateotp(), otp_expiry_time.Format("2006-01-02 15:04:05"), auth.DB); err != nil {
+		return otp_expiry_time, err
 	}
 
-	return nil
+	return otp_expiry_time, nil
 }
