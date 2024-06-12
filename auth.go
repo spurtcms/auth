@@ -133,11 +133,14 @@ func (auth *Auth) VerifyToken(token string, secret string) (userid int, loginTyp
 	return int(usrid.(float64)), logintypee, nil
 }
 
-func (auth *Auth) CheckMemberLogin(memberlogin MemberLoginCheck) error {
+
+func (auth *Auth) CheckMemberLogin(memberlogin MemberLoginCheck) (TblMember,error) {
 
 	var member TblMember
 
 	var err error
+
+	currentTime := time.Now().UTC()
 
 	if memberlogin.EmailwithPassword {
 
@@ -145,16 +148,16 @@ func (auth *Auth) CheckMemberLogin(memberlogin MemberLoginCheck) error {
 
 		if err != nil {
 
-			return err
+			return TblMember{},err
 		}
 
 		passerr := bcrypt.CompareHashAndPassword([]byte(member.Password), []byte(memberlogin.Password))
 
 		if passerr != nil && passerr != bcrypt.ErrMismatchedHashAndPassword {
-			return passerr
+			return TblMember{},passerr
 		}
 		if passerr == bcrypt.ErrMismatchedHashAndPassword {
-			return ErrorPassword
+			return TblMember{},ErrorPassword
 		}
 
 	} else if memberlogin.UsernameWithPassword {
@@ -163,16 +166,16 @@ func (auth *Auth) CheckMemberLogin(memberlogin MemberLoginCheck) error {
 
 		if err != nil {
 
-			return err
+			return TblMember{},err
 		}
 
 		passerr := bcrypt.CompareHashAndPassword([]byte(member.Password), []byte(memberlogin.Password))
 
 		if passerr != nil && passerr != bcrypt.ErrMismatchedHashAndPassword {
-			return passerr
+			return TblMember{},passerr
 		}
 		if passerr == bcrypt.ErrMismatchedHashAndPassword {
-			return ErrorPassword
+			return TblMember{},ErrorPassword
 		}
 
 	} else if memberlogin.EmailWithOTP {
@@ -180,27 +183,39 @@ func (auth *Auth) CheckMemberLogin(memberlogin MemberLoginCheck) error {
 		member, err = Authmodel.CheckEmailWithOtp(memberlogin.Email, auth.DB)
 
 		if err != nil {
-			return err
+			return TblMember{},err
+		}
+
+		if member.IsActive == 0{
+			return TblMember{},ErrorInactiveMember
 		}
 
 		if member.Otp != memberlogin.OTP {
-			return ErrorInvalidOTP
+			return TblMember{},ErrorInvalidOTP
 		}
+
+		if currentTime.After(member.OtpExpiry){
+			return TblMember{},ErrorOtpExpiry
+		} 
 
 	} else if memberlogin.UsernameWithOTP {
 
 		member, err = Authmodel.CheckUsernameWithOtp(memberlogin.Email, auth.DB)
 
 		if err != nil {
-			return err
+			return TblMember{},err
 		}
 
 		if member.Otp != memberlogin.OTP {
-			return ErrorInvalidOTP
+			return TblMember{},ErrorInvalidOTP
+		}
+
+		if currentTime.After(member.OtpExpiry){
+			return TblMember{},ErrorOtpExpiry
 		}
 	}
 
-	return ErrorMemberLogin
+	return member,nil
 
 }
 
@@ -282,7 +297,7 @@ func (auth *Auth) MemberVerifyToken(token string, secret string) (memberid int, 
 }
 
 // update otp
-func (auth *Auth) UpdateMemberOTP(otp OTP) (expiryTime time.Time, err error) {
+func (auth *Auth) UpdateMemberOTP(otp OTP) (int,time.Time,error) {
 
 	//generate otp
 	generateotp := func() int {
@@ -298,11 +313,15 @@ func (auth *Auth) UpdateMemberOTP(otp OTP) (expiryTime time.Time, err error) {
 		return otpint
 	}
 
-	otp_expiry_time := time.Now().UTC().Add(otp.Duration)
+	genOtp := generateotp()
 
-	if err := Authmodel.UpdateMemberOtp(otp.MemberId, generateotp(), otp_expiry_time.Format("2006-01-02 15:04:05"), auth.DB); err != nil {
-		return otp_expiry_time, err
+	otp_expiry := time.Now().UTC().Add(otp.Duration)
+
+	otp_expiry_time := otp_expiry.Format("2006-01-02 15:04:05")
+
+	if err := Authmodel.UpdateMemberOtp(otp.MemberId, genOtp, otp_expiry_time, auth.DB); err != nil {
+		return 0,time.Time{},err
 	}
 
-	return otp_expiry_time, nil
+	return genOtp,otp_expiry,nil
 }
