@@ -2,6 +2,7 @@ package auth
 
 import (
 	"fmt"
+	"strconv"
 
 	"gorm.io/gorm"
 )
@@ -11,7 +12,7 @@ func (permission *Auth) IsGranted(modulename string, permisison Action) (bool, e
 
 	if permission.RoleId != 1 { //if not an admin user
 
-		var modid int
+		// var modid string
 
 		var module TblModule
 
@@ -27,27 +28,33 @@ func (permission *Auth) IsGranted(modulename string, permisison Action) (bool, e
 			return false, err1
 		}
 
+		var que string
+
 		if module.Id != 0 {
 
-			modid = module.Id
+			// modid = module.Id
+
+			que = `and module_id =` + strconv.Itoa(module.Id)
 
 		} else {
 
-			modid = modpermissions.Id
+			// modid = modpermissions.Id
+
+			que = `and id =` + strconv.Itoa(modpermissions.Id)
 		}
 
 		var modulepermission []TblModulePermission
 
 		if permisison == "CRUD" {
 
-			if err := permission.DB.Model(TblModulePermission{}).Where("module_id=? and (full_access_permission=1 or display_name='View' or display_name='Update' or  display_name='Create' or display_name='Delete')", modid).Find(&modulepermission).Error; err != nil {
+			if err := permission.DB.Model(TblModulePermission{}).Where("(full_access_permission=1 or display_name='View' or display_name='Update' or  display_name='Create' or display_name='Delete')" + que + "").Find(&modulepermission).Error; err != nil {
 
 				return false, err
 			}
 
 		} else {
 
-			if err := permission.DB.Model(TblModulePermission{}).Where("module_id=? and display_name=?", modid, permisison).First(&modulepermission).Error; err != nil {
+			if err := permission.DB.Table("tbl_module_permissions").Where("display_name=? "+que+"", permisison).First(&modulepermission).Error; err != nil {
 
 				return false, err
 			}
