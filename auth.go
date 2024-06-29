@@ -244,7 +244,7 @@ func CreateMemberToken(userid, roleId int, secretKey string, loginType string) (
 	atClaims := jwt.MapClaims{}
 	atClaims["member_id"] = userid
 	atClaims["group_id"] = roleId
-	atClaims["expiry_time"] = time.Now().Add(2 * time.Hour).Unix()
+	atClaims["expiry_time"] = time.Now().Add(168 * time.Hour).Unix()
 	atClaims["login_type"] = loginType
 	token := jwt.NewWithClaims(jwt.SigningMethodHS256, atClaims)
 	return token.SignedString([]byte(secretKey))
