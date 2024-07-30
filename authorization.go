@@ -8,7 +8,7 @@ import (
 )
 
 // Check User Permission
-func (permission *Auth) IsGranted(modulename string, permisison Action) (bool, error) {
+func (permission *Auth) IsGranted(modulename string, permisison Action,tenantid int) (bool, error) {
 
 	if permission.RoleId != 1 { //if not an admin user
 
@@ -18,15 +18,17 @@ func (permission *Auth) IsGranted(modulename string, permisison Action) (bool, e
 
 		var modpermissions TblModulePermission
 
-		if err := permission.DB.Model(TblModule{}).Where("module_name=? and parent_id !=0", modulename).First(&module).Error; err != nil {
+		if err := permission.DB.Debug().Model(TblModule{}).Where("module_name=? and parent_id !=0 and tenant_id=?", modulename,tenantid).First(&module).Error; err != nil {
 
 			fmt.Println(err)
 		}
+		fmt.Println("module:", module)
 
-		if err1 := permission.DB.Model(TblModulePermission{}).Where("display_name=?", modulename).Find(&modpermissions).Error; err1 != nil {
+		if err1 := permission.DB.Debug().Model(TblModulePermission{}).Where("display_name=? and tenant_id=?", modulename,tenantid).Find(&modpermissions).Error; err1 != nil {
 
 			return false, err1
 		}
+		fmt.Println("modpermissions:", modpermissions)
 
 		var que string
 
@@ -47,14 +49,14 @@ func (permission *Auth) IsGranted(modulename string, permisison Action) (bool, e
 
 		if permisison == "CRUD" {
 
-			if err := permission.DB.Model(TblModulePermission{}).Where("(full_access_permission=1 or display_name='View' or display_name='Update' or  display_name='Create' or display_name='Delete')" + que + "").Find(&modulepermission).Error; err != nil {
+			if err := permission.DB.Model(TblModulePermission{}).Where("(full_access_permission=1 or display_name='View' or display_name='Update' or  display_name='Create' or display_name='Delete') and tenant_id=?" + que + "",tenantid).Find(&modulepermission).Error; err != nil {
 
 				return false, err
 			}
 
 		} else {
 
-			if err := permission.DB.Table("tbl_module_permissions").Where("display_name=? "+que+"", permisison).First(&modulepermission).Error; err != nil {
+			if err := permission.DB.Table("tbl_module_permissions").Where("display_name=? and tenant_id=?"+que+"", permisison,tenantid).First(&modulepermission).Error; err != nil {
 
 				return false, err
 			}
@@ -70,7 +72,7 @@ func (permission *Auth) IsGranted(modulename string, permisison Action) (bool, e
 
 			var rolecheck TblRolePermission
 
-			query := permission.DB.Model(TblRolePermission{}).Where("permission_id=? and role_id=?", val.Id, permission.RoleId).First(&rolecheck)
+			query := permission.DB.Model(TblRolePermission{}).Where("permission_id=? and role_id=? and tenant_id=?", val.Id, permission.RoleId,tenantid).First(&rolecheck)
 
 			if query.Error == gorm.ErrRecordNotFound {
 

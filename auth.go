@@ -29,13 +29,13 @@ func AuthSetup(conf Config) *Auth {
 }
 
 // Check UserName Password - userlogin
-func (auth *Auth) Checklogin(Username string, Password string) (string, int, error) {
+func (auth *Auth) Checklogin(Username string, Password string,tenantid int) (string, int, error) {
 
 	username := Username
 
 	password := Password
 
-	user, err := Authmodel.CheckLogin(username, password, auth.DB)
+	user, err := Authmodel.CheckLogin(username, password, auth.DB,tenantid)
 
 	if err != nil {
 
@@ -134,7 +134,7 @@ func (auth *Auth) VerifyToken(token string, secret string) (userid int, loginTyp
 	return int(usrid.(float64)), logintypee, nil
 }
 
-func (auth *Auth) CheckMemberLogin(memberlogin MemberLoginCheck) (TblMember, error) {
+func (auth *Auth) CheckMemberLogin(memberlogin MemberLoginCheck,tenantid int) (TblMember, error) {
 
 	var member TblMember
 
@@ -144,7 +144,7 @@ func (auth *Auth) CheckMemberLogin(memberlogin MemberLoginCheck) (TblMember, err
 
 	if memberlogin.EmailwithPassword {
 
-		member, err = Authmodel.CheckMemberLoginWithEmail(memberlogin.Email, memberlogin.Username, auth.DB)
+		member, err = Authmodel.CheckMemberLoginWithEmail(memberlogin.Email, memberlogin.Username, auth.DB,tenantid)
 
 		if err != nil {
 
@@ -162,7 +162,7 @@ func (auth *Auth) CheckMemberLogin(memberlogin MemberLoginCheck) (TblMember, err
 
 	} else if memberlogin.UsernameWithPassword {
 
-		member, err = Authmodel.CheckMemberLoginWithEmail(memberlogin.Email, memberlogin.Username, auth.DB)
+		member, err = Authmodel.CheckMemberLoginWithEmail(memberlogin.Email, memberlogin.Username, auth.DB,tenantid)
 
 		if err != nil {
 
@@ -180,7 +180,7 @@ func (auth *Auth) CheckMemberLogin(memberlogin MemberLoginCheck) (TblMember, err
 
 	} else if memberlogin.EmailWithOTP {
 
-		member, err = Authmodel.CheckEmailWithOtp(memberlogin.Email, auth.DB)
+		member, err = Authmodel.CheckEmailWithOtp(memberlogin.Email, auth.DB,tenantid)
 
 		if err != nil {
 			return TblMember{}, err
@@ -200,7 +200,7 @@ func (auth *Auth) CheckMemberLogin(memberlogin MemberLoginCheck) (TblMember, err
 
 	} else if memberlogin.UsernameWithOTP {
 
-		member, err = Authmodel.CheckUsernameWithOtp(memberlogin.Email, auth.DB)
+		member, err = Authmodel.CheckUsernameWithOtp(memberlogin.Email, auth.DB,tenantid)
 
 		if err != nil {
 			return TblMember{}, err
@@ -220,11 +220,11 @@ func (auth *Auth) CheckMemberLogin(memberlogin MemberLoginCheck) (TblMember, err
 }
 
 // member token
-func (auth *Auth) GenerateMemberToken(memberid int, loginType string, secretKey string) (token string, err error) {
+func (auth *Auth) GenerateMemberToken(memberid int, loginType string, secretKey string, tenantid int) (token string, err error) {
 
 	var MemberDetails TblMember
 
-	if err := Authmodel.GetMemberDetailsByMemberId(&MemberDetails, memberid, auth.DB); err != nil {
+	if err := Authmodel.GetMemberDetailsByMemberId(&MemberDetails, memberid, auth.DB,tenantid); err != nil {
 
 		return "", err
 	}
@@ -297,7 +297,7 @@ func (auth *Auth) MemberVerifyToken(token string, secret string) (memberid int, 
 }
 
 // update otp
-func (auth *Auth) UpdateMemberOTP(otp OTP) (int, time.Time, error) {
+func (auth *Auth) UpdateMemberOTP(otp OTP,tenantid int) (int, time.Time, error) {
 
 	//generate otp
 	generateotp := func() int {
@@ -319,7 +319,7 @@ func (auth *Auth) UpdateMemberOTP(otp OTP) (int, time.Time, error) {
 
 	otp_expiry_time := otp_expiry.Format("2006-01-02 15:04:05")
 
-	if err := Authmodel.UpdateMemberOtp(otp.MemberId, genOtp, otp_expiry_time, auth.DB); err != nil {
+	if err := Authmodel.UpdateMemberOtp(otp.MemberId, genOtp, otp_expiry_time, auth.DB,tenantid); err != nil {
 		return 0, time.Time{}, err
 	}
 

@@ -99,7 +99,7 @@ func TestLogin(t *testing.T) {
 
 		t.Run("checklogin", func(t *testing.T) {
 
-			_, _, err := auth.Checklogin(val.Username, val.Password)
+			_, _, err := auth.Checklogin(val.Username, val.Password, 1)
 
 			log.Println(err)
 

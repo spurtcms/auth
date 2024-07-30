@@ -65,6 +65,7 @@ type TblMember struct {
 	CreatedBy        int
 	ModifiedOn       time.Time
 	ModifiedBy       int
+	TenantId         int
 }
 
 type TblModule struct {
@@ -124,9 +125,9 @@ func IsDeleted(db *gorm.DB) *gorm.DB {
 }
 
 // check db userlogin
-func (auth authmodel) CheckLogin(username string, Password string, db *gorm.DB) (user tbluser, err error) {
+func (auth authmodel) CheckLogin(username string, Password string, db *gorm.DB, tenantid int) (user tbluser, err error) {
 
-	if err := db.Table("tbl_users").Scopes(IsDeleted).Where("username = ?", username).First(&user).Error; err != nil {
+	if err := db.Table("tbl_users").Where("username = ? and tenant_id=? and is_deleted = 0", username, tenantid).First(&user).Error; err != nil {
 
 		return tbluser{}, err
 
@@ -136,18 +137,18 @@ func (auth authmodel) CheckLogin(username string, Password string, db *gorm.DB) 
 }
 
 // check email with password
-func (auth authmodel) CheckMemberLoginWithEmail(email string, username string, DB *gorm.DB) (member TblMember, err error) {
+func (auth authmodel) CheckMemberLoginWithEmail(email string, username string, DB *gorm.DB, tenantid int) (member TblMember, err error) {
 
 	if email != "" {
 
-		if err := DB.Model(TblMember{}).Where("is_deleted =0 and email=?", email).First(&member).Error; err != nil {
+		if err := DB.Model(TblMember{}).Where("is_deleted =0 and email=? and tenant_id=?", email, tenantid).First(&member).Error; err != nil {
 
 			return TblMember{}, err
 		}
 
 	} else if username != "" {
 
-		if err := DB.Model(TblMember{}).Where("is_deleted =0 and username=? ", username).First(&member).Error; err != nil {
+		if err := DB.Model(TblMember{}).Where("is_deleted =0 and username=? and tenant_id=? ", username, tenantid).First(&member).Error; err != nil {
 
 			return TblMember{}, err
 		}
@@ -157,19 +158,9 @@ func (auth authmodel) CheckMemberLoginWithEmail(email string, username string, D
 	return member, nil
 }
 
-func (auth authmodel) CheckEmailWithOtp(email string, DB *gorm.DB) (member TblMember, err error) {
+func (auth authmodel) CheckEmailWithOtp(email string, DB *gorm.DB, tenantid int) (member TblMember, err error) {
 
-	if err := DB.Model(TblMember{}).Where("is_deleted = 0 and email = ?", email).First(&member).Error; err != nil {
-
-		return TblMember{}, err
-	}
-
-	return member, nil
-}
-
-func (auth authmodel) CheckUsernameWithOtp(username string, DB *gorm.DB) (member TblMember, err error) {
-
-	if err := DB.Model(TblMember{}).Where("is_deleted = 0 and username = ?", username).First(&member).Error; err != nil {
+	if err := DB.Model(TblMember{}).Where("is_deleted = 0 and email = ? and tenant_id=?", email, tenantid).First(&member).Error; err != nil {
 
 		return TblMember{}, err
 	}
@@ -177,9 +168,19 @@ func (auth authmodel) CheckUsernameWithOtp(username string, DB *gorm.DB) (member
 	return member, nil
 }
 
-func (auth authmodel) UpdateMemberOtp(id int, otp int, otpExpiry string, DB *gorm.DB) error {
+func (auth authmodel) CheckUsernameWithOtp(username string, DB *gorm.DB, tenantid int) (member TblMember, err error) {
 
-	if err := DB.Table("tbl_members").Where("id=?", id).Updates(map[string]interface{}{
+	if err := DB.Model(TblMember{}).Where("is_deleted = 0 and username = ? and tenant_id=?", username, tenantid).First(&member).Error; err != nil {
+
+		return TblMember{}, err
+	}
+
+	return member, nil
+}
+
+func (auth authmodel) UpdateMemberOtp(id int, otp int, otpExpiry string, DB *gorm.DB, tenantid int) error {
+
+	if err := DB.Table("tbl_members").Where("id=? and tenant_id=?", id, tenantid).Updates(map[string]interface{}{
 		"otp": otp, "otp_expiry": otpExpiry,
 	}).Error; err != nil {
 		return err
@@ -188,9 +189,9 @@ func (auth authmodel) UpdateMemberOtp(id int, otp int, otpExpiry string, DB *gor
 	return nil
 }
 
-func (auth authmodel) GetMemberDetailsByMemberId(MemberDetails *TblMember, memberId int, DB *gorm.DB) error {
+func (auth authmodel) GetMemberDetailsByMemberId(MemberDetails *TblMember, memberId int, DB *gorm.DB, tenantid int) error {
 
-	if err := DB.Table("tbl_members").Where("is_deleted=0 and id = ?", memberId).First(&MemberDetails).Error; err != nil {
+	if err := DB.Table("tbl_members").Where("is_deleted=0 and id = ? and tenant_id=?", memberId, tenantid).First(&MemberDetails).Error; err != nil {
 		return err
 	}
 

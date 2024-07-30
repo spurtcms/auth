@@ -18,6 +18,7 @@ type TblRole struct {
 	CreatedBy   int       `gorm:"type:int"`
 	ModifiedOn  time.Time `gorm:"type:datetime;DEFAULT:NULL"`
 	ModifiedBy  int       `gorm:"DEFAULT:NULL;type:int"`
+	TenantId    int       `gorm:"type:int"`
 }
 
 type TblUser struct {
@@ -43,6 +44,7 @@ type TblUser struct {
 	IsDeleted         int       `gorm:"type:int"`
 	DeletedOn         time.Time `gorm:"type:datetime;DEFAULT:NULL"`
 	DeletedBy         int       `gorm:"DEFAULT:NULL;type:int"`
+	TenantId          int       `gorm:"type:int"`
 }
 
 type TblModule struct {
@@ -60,8 +62,8 @@ type TblModule struct {
 	MenuType             string    `gorm:"type:varchar(255)"`
 	FullAccessPermission int       `gorm:"type:int"`
 	GroupFlg             int       `gorm:"type:int"`
+	TenantId             int       `gorm:"type:int"`
 }
-
 
 type TblModulePermission struct {
 	Id                   int       `gorm:"primaryKey"`
@@ -79,6 +81,7 @@ type TblModulePermission struct {
 	CreatedOn            time.Time `gorm:"type:datetime"`
 	ModifiedBy           int       `gorm:"DEFAULT:NULL;type:int"`
 	ModifiedOn           time.Time `gorm:"type:datetime;DEFAULT:NULL"`
+	TenantId             int       `gorm:"type:int"`
 }
 
 type TblRolePermission struct {
@@ -87,6 +90,7 @@ type TblRolePermission struct {
 	PermissionId int       `gorm:"type:int"`
 	CreatedBy    int       `gorm:"type:int"`
 	CreatedOn    time.Time `gorm:"type:datetime"`
+	TenantId     int       `gorm:"type:int"`
 }
 
 type TblMemberGroup struct {
@@ -102,6 +106,7 @@ type TblMemberGroup struct {
 	ModifiedBy  int       `gorm:"DEFAULT:NULL;type:int"`
 	DeletedBy   int       `gorm:"type:int"`
 	DeletedOn   time.Time `gorm:"type:datetime;DEFAULT:NULL"`
+	TenantId    int       `gorm:"type:int"`
 }
 
 type TblMember struct {
@@ -128,6 +133,7 @@ type TblMember struct {
 	CreatedBy        int       `gorm:"type:int"`
 	ModifiedOn       time.Time `gorm:"type:datetime;DEFAULT:NULL"`
 	ModifiedBy       int       `gorm:"DEFAULT:NULL;type:int"`
+	TenantId         int       `gorm:"type:int"`
 }
 
 type TblMemberProfile struct {
@@ -155,6 +161,7 @@ type TblMemberProfile struct {
 	IsDeleted       int               `gorm:"DEFAULT:0"`
 	DeletedBy       int               `gorm:"DEFAULT:NULL;type:int"`
 	DeletedOn       time.Time         `gorm:"type:datetime;DEFAULT:NULL"`
+	TenantId        int               `gorm:"type:int"`
 }
 
 func MigrationTables(db *gorm.DB) {

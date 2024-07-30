@@ -30,6 +30,7 @@ type TblUser struct {
 	IsDeleted         int       `gorm:"type:integer"`
 	DeletedOn         time.Time `gorm:"type:timestamp without time zone;DEFAULT:NULL"`
 	DeletedBy         int       `gorm:"DEFAULT:NULL"`
+	TenantId          int       `gorm:"type:integer"`
 }
 
 type TblModule struct {
@@ -46,6 +47,7 @@ type TblModule struct {
 	CreatedOn        time.Time `gorm:"type:timestamp without time zone"`
 	MenuType         string    `gorm:"type:character varying"`
 	GroupFlg         int       `gorm:"type:integer"`
+	TenantId         int       `gorm:"type:integer"`
 }
 
 type TblModulePermission struct {
@@ -64,6 +66,7 @@ type TblModulePermission struct {
 	CreatedOn            time.Time `gorm:"type:timestamp without time zone"`
 	ModifiedBy           int       `gorm:"DEFAULT:NULL"`
 	ModifiedOn           time.Time `gorm:"type:timestamp without time zone;DEFAULT:NULL"`
+	TenantId             int       `gorm:"type:integer"`
 }
 
 type TblRolePermission struct {
@@ -72,6 +75,7 @@ type TblRolePermission struct {
 	PermissionId int       `gorm:"type:integer"`
 	CreatedBy    int       `gorm:"type:integer"`
 	CreatedOn    time.Time `gorm:"type:timestamp without time zone"`
+	TenantId     int       `gorm:"type:integer"`
 }
 
 type TblMemberGroup struct {
@@ -85,6 +89,7 @@ type TblMemberGroup struct {
 	CreatedBy   int       `gorm:"type:integer"`
 	ModifiedOn  time.Time `gorm:"type:timestamp without time zone;DEFAULT:NULL"`
 	ModifiedBy  int       `gorm:"DEFAULT:NULL"`
+	TenantId    int       `gorm:"type:integer"`
 }
 
 type TblMember struct {
@@ -111,6 +116,7 @@ type TblMember struct {
 	CreatedBy        int       `gorm:"type:integer"`
 	ModifiedOn       time.Time `gorm:"type:timestamp without time zone;DEFAULT:NULL"`
 	ModifiedBy       int       `gorm:"DEFAULT:NULL"`
+	TenantId         int       `gorm:"type:integer"`
 }
 
 type TblMemberProfile struct {
@@ -138,6 +144,7 @@ type TblMemberProfile struct {
 	IsDeleted       int               `gorm:"DEFAULT:0"`
 	DeletedBy       int               `gorm:"DEFAULT:NULL"`
 	DeletedOn       time.Time         `gorm:"type:timestamp without time zone;DEFAULT:NULL"`
+	TenantId        int               `gorm:"type:integer"`
 }
 
 func MigrationTables(db *gorm.DB) {
