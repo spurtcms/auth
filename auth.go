@@ -35,7 +35,7 @@ func (auth *Auth) Checklogin(Username string, Password string,tenantid int) (str
 
 	password := Password
 
-	user, err := Authmodel.CheckLogin(username, password, auth.DB,tenantid)
+	user, err := Authmodel.CheckLogin(username, password, auth.DB)
 
 	if err != nil {
 
