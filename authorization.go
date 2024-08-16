@@ -10,7 +10,7 @@ import (
 // Check User Permission
 func (permission *Auth) IsGranted(modulename string, permisison Action, tenantid int) (bool, error) {
 
-	if permission.RoleId != 1 { //if not an admin user
+	if (permission.RoleId != 1 || permission.RoleId !=2){ //if not an admin user
 
 		// var modid string
 
