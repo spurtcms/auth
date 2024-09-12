@@ -325,3 +325,53 @@ func (auth *Auth) UpdateMemberOTP(otp OTP,tenantid int) (int, time.Time, error) 
 
 	return genOtp, otp_expiry, nil
 }
+
+func (auth *Auth) OtpLoginVerification(otp int, email string, tenantid int) (User Tbluser, token string, err error) {
+
+	userdet, err := Authmodel.GetUserByEmail(email, auth.DB, tenantid)
+
+	if err != nil {
+
+		return Tbluser{}, "", fmt.Errorf("")
+	}
+
+	currentTime := time.Now().UTC()
+
+	if userdet.Otp != otp {
+
+		return Tbluser{}, "", ErrorInvalidOTP
+	}
+
+	if !userdet.OtpExpiry.After(currentTime) {
+
+		return Tbluser{}, "", ErrorOtpExpiry
+	}
+
+	auth.UserId = userdet.Id
+
+	auth.RoleId = userdet.RoleId
+
+	token, _ = auth.CreateToken()
+
+	return userdet, token, nil
+
+}
+
+func (auth *Auth) UpdateUserOTP(user Tbluser) error {
+
+	ExpirationTime := time.Now().UTC().Add(5 * time.Minute)
+
+	user.OtpExpiry = ExpirationTime
+
+	user.ModifiedOn, _ = time.Parse("2006-01-02 15:04:05", time.Now().UTC().Format("2006-01-02 15:04:05"))
+
+	err := Authmodel.UpdateUserOtp(user, auth.DB)
+
+	if err != nil {
+
+		return err
+	}
+
+	return nil
+
+}
