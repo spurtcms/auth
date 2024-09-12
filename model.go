@@ -44,6 +44,53 @@ type Tbluser struct {
 	OtpExpiry            time.Time `gorm:"column:otp_expiry"`
 }
 
+type SocialLogin struct {
+	Email     string `json:"email"`
+	Name      string `json:"name"`
+	GivenName string `json:"given_name"`
+	FirstName string `json:"first_name"`
+	LastName  string `json:"last_name"`
+}
+
+type TblMstrTenant struct {
+	Id        int       `gorm:"primaryKey;auto_increment;type:serial"`
+	TenantId  int       `gorm:"type:integer"`
+	DeletedOn time.Time `gorm:"type:timestamp without time zone;DEFAULT:NULL"`
+	DeletedBy int       `gorm:"type:integer;DEFAULT:NULL"`
+	IsDeleted int       `gorm:"type:integer;DEFAULT:0"`
+}
+type Tblrole struct {
+	Id          int       `gorm:"column:id"`
+	Name        string    `gorm:"column:name"`
+	Description string    `gorm:"column:description"`
+	Slug        string    `gorm:"column:slug"`
+	IsActive    int       `gorm:"column:is_active"`
+	IsDeleted   int       `gorm:"column:is_deleted"`
+	CreatedOn   time.Time `gorm:"column:created_on"`
+	CreatedBy   int       `gorm:"column:created_by"`
+	ModifiedOn  time.Time `gorm:"column:modified_on;DEFAULT:NULL"`
+	ModifiedBy  int       `gorm:"column:modified_by;DEFAULT:NULL"`
+	CreatedDate string    `gorm:"-:migration;<-:false"`
+	User        []Tbluser `gorm:"-"`
+	TenantId    int       `gorm:"column:tenant_id;DEFAULT:NULL"`
+}
+type TblGraphqlSettings struct {
+	Id          int
+	TokenName   string
+	Description string
+	Duration    string
+	CreatedBy   int `gorm:"DEFAULT:NULL"`
+	CreatedOn   time.Time
+	ModifiedBy  int       `gorm:"DEFAULT:NULL"`
+	ModifiedOn  time.Time `gorm:"DEFAULT:NULL"`
+	DeletedBy   int       `gorm:"DEFAULT:NULL"`
+	DeletedOn   time.Time `gorm:"DEFAULT:NULL"`
+	IsDeleted   int       `gorm:"DEFAULT:0"`
+	Token       string
+	IsDefault   int       `gorm:"DEFAULT:0"`
+	ExpiryTime  time.Time `gorm:"DEFAULT:NULL"`
+	TenantId    int
+}
 type MemberLoginCheck struct {
 	Username             string
 	Email                string
@@ -226,5 +273,69 @@ func (auth authmodel) UpdateUserOtp(user Tbluser, DB *gorm.DB) error {
 		return result.Error
 	}
 
+	return nil
+}
+
+func (auth authmodel) CheckRoleByName(rolename string, DB *gorm.DB) (role Tblrole, err error) {
+
+	if err := DB.Debug().Table("tbl_roles").Where("slug =? ", rolename).Find(&role).Error; err != nil {
+
+		return Tblrole{}, err
+	}
+
+	return role, err
+}
+func (auth authmodel) CreateRole(role Tblrole, DB *gorm.DB) (roledetails Tblrole, err error) {
+
+	if err := DB.Debug().Table("tbl_roles").Create(role).Error; err != nil {
+
+		return roledetails, err
+	}
+
+	return roledetails, nil
+}
+func (auth authmodel) CreateUser(user *Tbluser, DB *gorm.DB) (team Tbluser, terr error) {
+
+	if err := DB.Debug().Table("tbl_users").Create(&user).Error; err != nil {
+
+		return Tbluser{}, err
+
+	}
+
+	return *user, nil
+}
+
+func (auth authmodel) GetRoleById(roleid int, DB *gorm.DB) (role Tblrole, err error) {
+
+	if err := DB.Table("tbl_roles").Where("id=?", roleid).First(&role).Error; err != nil {
+
+		return Tblrole{}, err
+
+	}
+
+	return role, nil
+}
+func (auth authmodel) CreateTenantid(user *TblMstrTenant, DB *gorm.DB) (int, error) {
+	result := DB.Table("tbl_mstr_tenants").Create(user)
+	if result.Error != nil {
+		return 0, result.Error
+	}
+	return user.Id, nil
+}
+
+func (auth authmodel) UpdateTenantId(UserId int, Tenantid int, DB *gorm.DB) error {
+
+	result := DB.Table("tbl_users").Where("id = ?", UserId).Update("tenant_id", Tenantid)
+
+	if result.Error != nil {
+		return result.Error
+	}
+
+	return nil
+}
+func (auth authmodel) CreateTenantApiToken(DB *gorm.DB, tokenDetails *TblGraphqlSettings) error {
+	if err := DB.Debug().Create(&tokenDetails).Error; err != nil {
+		return err
+	}
 	return nil
 }

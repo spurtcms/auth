@@ -2,6 +2,7 @@ package auth
 
 import (
 	"crypto/rand"
+	"encoding/base64"
 	"fmt"
 	"math/big"
 	"strconv"
@@ -29,7 +30,7 @@ func AuthSetup(conf Config) *Auth {
 }
 
 // Check UserName Password - userlogin
-func (auth *Auth) Checklogin(Username string, Password string,tenantid int) (string, int, error) {
+func (auth *Auth) Checklogin(Username string, Password string, tenantid int) (string, int, error) {
 
 	username := Username
 
@@ -134,7 +135,7 @@ func (auth *Auth) VerifyToken(token string, secret string) (userid int, loginTyp
 	return int(usrid.(float64)), logintypee, nil
 }
 
-func (auth *Auth) CheckMemberLogin(memberlogin MemberLoginCheck,tenantid int) (TblMember, error) {
+func (auth *Auth) CheckMemberLogin(memberlogin MemberLoginCheck, tenantid int) (TblMember, error) {
 
 	var member TblMember
 
@@ -144,7 +145,7 @@ func (auth *Auth) CheckMemberLogin(memberlogin MemberLoginCheck,tenantid int) (T
 
 	if memberlogin.EmailwithPassword {
 
-		member, err = Authmodel.CheckMemberLoginWithEmail(memberlogin.Email, memberlogin.Username, auth.DB,tenantid)
+		member, err = Authmodel.CheckMemberLoginWithEmail(memberlogin.Email, memberlogin.Username, auth.DB, tenantid)
 
 		if err != nil {
 
@@ -162,7 +163,7 @@ func (auth *Auth) CheckMemberLogin(memberlogin MemberLoginCheck,tenantid int) (T
 
 	} else if memberlogin.UsernameWithPassword {
 
-		member, err = Authmodel.CheckMemberLoginWithEmail(memberlogin.Email, memberlogin.Username, auth.DB,tenantid)
+		member, err = Authmodel.CheckMemberLoginWithEmail(memberlogin.Email, memberlogin.Username, auth.DB, tenantid)
 
 		if err != nil {
 
@@ -180,7 +181,7 @@ func (auth *Auth) CheckMemberLogin(memberlogin MemberLoginCheck,tenantid int) (T
 
 	} else if memberlogin.EmailWithOTP {
 
-		member, err = Authmodel.CheckEmailWithOtp(memberlogin.Email, auth.DB,tenantid)
+		member, err = Authmodel.CheckEmailWithOtp(memberlogin.Email, auth.DB, tenantid)
 
 		if err != nil {
 			return TblMember{}, err
@@ -200,7 +201,7 @@ func (auth *Auth) CheckMemberLogin(memberlogin MemberLoginCheck,tenantid int) (T
 
 	} else if memberlogin.UsernameWithOTP {
 
-		member, err = Authmodel.CheckUsernameWithOtp(memberlogin.Email, auth.DB,tenantid)
+		member, err = Authmodel.CheckUsernameWithOtp(memberlogin.Email, auth.DB, tenantid)
 
 		if err != nil {
 			return TblMember{}, err
@@ -224,7 +225,7 @@ func (auth *Auth) GenerateMemberToken(memberid int, loginType string, secretKey 
 
 	var MemberDetails TblMember
 
-	if err := Authmodel.GetMemberDetailsByMemberId(&MemberDetails, memberid, auth.DB,tenantid); err != nil {
+	if err := Authmodel.GetMemberDetailsByMemberId(&MemberDetails, memberid, auth.DB, tenantid); err != nil {
 
 		return "", err
 	}
@@ -297,7 +298,7 @@ func (auth *Auth) MemberVerifyToken(token string, secret string) (memberid int, 
 }
 
 // update otp
-func (auth *Auth) UpdateMemberOTP(otp OTP,tenantid int) (int, time.Time, error) {
+func (auth *Auth) UpdateMemberOTP(otp OTP, tenantid int) (int, time.Time, error) {
 
 	//generate otp
 	generateotp := func() int {
@@ -319,7 +320,7 @@ func (auth *Auth) UpdateMemberOTP(otp OTP,tenantid int) (int, time.Time, error) 
 
 	otp_expiry_time := otp_expiry.Format("2006-01-02 15:04:05")
 
-	if err := Authmodel.UpdateMemberOtp(otp.MemberId, genOtp, otp_expiry_time, auth.DB,tenantid); err != nil {
+	if err := Authmodel.UpdateMemberOtp(otp.MemberId, genOtp, otp_expiry_time, auth.DB, tenantid); err != nil {
 		return 0, time.Time{}, err
 	}
 
@@ -374,4 +375,165 @@ func (auth *Auth) UpdateUserOTP(user Tbluser) error {
 
 	return nil
 
+}
+
+func (auth *Auth) CheckWebAuth(login *SocialLogin) (string, int, error) {
+
+	userinfo, _ := Authmodel.GetUserByEmail(login.Email, auth.DB, -1)
+
+	fmt.Println(userinfo)
+	var userdetails Tbluser
+
+	var tenantID int
+	var token1 string
+
+	createdon, _ := time.Parse("2006-01-02 15:04:05", time.Now().UTC().Format("2006-01-02 15:04:05"))
+
+	if userinfo.Email != login.Email {
+
+		roledetails, _ := Authmodel.CheckRoleByName("admin", auth.DB)
+
+		if roledetails.Id == 0 {
+
+			role1, _ := Authmodel.CreateRole(Tblrole{Name: "Admin", Description: "Admin role type", IsActive: 1, CreatedOn: createdon, Slug: "admin"}, auth.DB)
+
+			Newuser := Tbluser{
+				FirstName:         login.FirstName,
+				LastName:          login.LastName,
+				Email:             login.Email,
+				Username:          login.GivenName,
+				RoleId:            role1.Id,
+				IsActive:          1,
+				CreatedOn:         createdon,
+				DefaultLanguageId: 1,
+				TenantId:          tenantID,
+			}
+
+			userdetails, _ = Authmodel.CreateUser(&Newuser, auth.DB)
+
+			role, err := Authmodel.GetRoleById(role1.Id, auth.DB)
+			if err != nil {
+				fmt.Printf("get role details error: %s", err)
+			}
+
+			Iddd := TblMstrTenant{
+				TenantId: userdetails.Id,
+			}
+
+			if role.Slug == "admin" {
+				tenantID, err = Authmodel.CreateTenantid(&Iddd, auth.DB)
+				if err != nil {
+					fmt.Println("Tenant ID not created:", err)
+					return "", 0, nil
+				}
+
+				Authmodel.UpdateTenantId(userdetails.Id, tenantID, auth.DB)
+
+				err := CreateApiToken(userdetails.Id, tenantID, auth)
+
+				if err != nil {
+
+					return "", 0, nil
+				}
+			}
+
+		} else {
+
+			Newuser := Tbluser{
+				FirstName:         login.FirstName,
+				LastName:          login.LastName,
+				Email:             login.Email,
+				Username:          login.GivenName,
+				RoleId:            roledetails.Id,
+				IsActive:          1,
+				CreatedOn:         createdon,
+				DefaultLanguageId: 1,
+				TenantId:          tenantID,
+			}
+
+			userdetails, _ = Authmodel.CreateUser(&Newuser, auth.DB)
+
+			role, err := Authmodel.GetRoleById(roledetails.Id, auth.DB)
+			if err != nil {
+				fmt.Printf("get role details error: %s", err)
+			}
+			// fmt.Println("role:",role)
+			Iddd := TblMstrTenant{
+				TenantId: userdetails.Id,
+			}
+
+			if role.Slug == "admin" {
+				tenantID, err = Authmodel.CreateTenantid(&Iddd, auth.DB)
+				if err != nil {
+					fmt.Println("Tenant ID not created:", err)
+					return "", 0, nil
+				}
+
+				Authmodel.UpdateTenantId(userdetails.Id, tenantID, auth.DB)
+
+				err := CreateApiToken(userdetails.Id, tenantID, auth)
+
+				if err != nil {
+
+					return "", 0, nil
+				}
+			}
+
+		}
+
+		auth.UserId = userdetails.Id
+
+		auth.RoleId = userdetails.RoleId
+
+		token1, _ = auth.CreateToken()
+
+	} else {
+
+		auth.UserId = userinfo.Id
+
+		auth.RoleId = userinfo.RoleId
+
+		token1, _ = auth.CreateToken()
+
+	}
+
+	return token1, auth.UserId, nil
+}
+func GenerateTenantApiToken(length int) (string, error) {
+	b := make([]byte, length)               // Create a slice to hold 32 bytes of random data
+	if _, err := rand.Read(b); err != nil { // Fill the slice with random data and handle any errors
+		return "", err // Return an empty string and the error if something went wrong
+	}
+	return base64.URLEncoding.EncodeToString(b), nil // Encode the random bytes to a URL-safe base64 string
+}
+
+func CreateApiToken(userid int, tenantid int, auth *Auth) error {
+
+	ApiToken, err := GenerateTenantApiToken(64)
+	if err != nil {
+		return err
+	}
+	createdon, _ := time.Parse("2006-01-02 15:04:05", time.Now().UTC().Format("2006-01-02 15:04:05"))
+
+	tokenDetails := TblGraphqlSettings{
+		TokenName:   "Default Token",
+		Description: "Default token",
+		Duration:    "Unlimited",
+		CreatedOn:   createdon,
+		Token:       ApiToken,
+		IsDefault:   1,
+		TenantId:    tenantid}
+	switch {
+	case userid != 0:
+		tokenDetails.CreatedBy = userid
+	}
+
+	err1 := Authmodel.CreateTenantApiToken(auth.DB, &tokenDetails)
+	if err1 != nil {
+		fmt.Println("tenant api token not created:", err)
+		fmt.Printf("tenant api token not created: %v", err)
+		return nil
+	}
+
+	return nil
 }
