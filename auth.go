@@ -9,6 +9,7 @@ import (
 	"time"
 
 	"github.com/golang-jwt/jwt"
+	"github.com/google/uuid"
 	"github.com/spurtcms/auth/migration"
 	"golang.org/x/crypto/bcrypt"
 )
@@ -393,6 +394,8 @@ func (auth *Auth) CheckWebAuth(login *SocialLogin) (string, int, error) {
 
 		roledetails, _ := Authmodel.CheckRoleByName("admin", auth.DB)
 
+		uvuid := (uuid.New()).String()
+
 		if roledetails.Id == 0 {
 
 			role1, _ := Authmodel.CreateRole(Tblrole{Name: "Admin", Description: "Admin role type", IsActive: 1, CreatedOn: createdon, Slug: "admin"}, auth.DB)
@@ -407,6 +410,7 @@ func (auth *Auth) CheckWebAuth(login *SocialLogin) (string, int, error) {
 				CreatedOn:         createdon,
 				DefaultLanguageId: 1,
 				TenantId:          tenantID,
+				Uuid:              uvuid,
 			}
 
 			userdetails, _ = Authmodel.CreateUser(&Newuser, auth.DB)
@@ -449,6 +453,7 @@ func (auth *Auth) CheckWebAuth(login *SocialLogin) (string, int, error) {
 				CreatedOn:         createdon,
 				DefaultLanguageId: 1,
 				TenantId:          tenantID,
+				Uuid:              uvuid,
 			}
 
 			userdetails, _ = Authmodel.CreateUser(&Newuser, auth.DB)

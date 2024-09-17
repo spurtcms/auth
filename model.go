@@ -260,7 +260,13 @@ func (auth authmodel) GetMemberDetailsByMemberId(MemberDetails *TblMember, membe
 }
 func (auth authmodel) GetUserByEmail(email string, DB *gorm.DB, tenantid int) (user Tbluser, err error) {
 
-	if err := DB.Table("tbl_users").Where("is_deleted=0 and email = ? and (tenant_id is NULL or tenant_id=?)", email, tenantid).First(&user).Error; err != nil {
+	query := DB.Debug().Table("tbl_users").Where("is_deleted = 0 AND email = ?", email)
+
+	if tenantid != -1 {
+		query = query.Where("(tenant_id IS NULL OR tenant_id = ?)", tenantid)
+	}
+
+	if err := query.First(&user).Error; err != nil {
 		return Tbluser{}, err
 	}
 
@@ -287,12 +293,12 @@ func (auth authmodel) CheckRoleByName(rolename string, DB *gorm.DB) (role Tblrol
 }
 func (auth authmodel) CreateRole(role Tblrole, DB *gorm.DB) (roledetails Tblrole, err error) {
 
-	if err := DB.Debug().Table("tbl_roles").Create(role).Error; err != nil {
+	if err := DB.Debug().Table("tbl_roles").Create(&role).Error; err != nil {
 
-		return roledetails, err
+		return Tblrole{}, err
 	}
 
-	return roledetails, nil
+	return role, nil
 }
 func (auth authmodel) CreateUser(user *Tbluser, DB *gorm.DB) (team Tbluser, terr error) {
 
