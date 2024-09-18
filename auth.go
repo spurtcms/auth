@@ -359,7 +359,7 @@ func (auth *Auth) OtpLoginVerification(otp int, email string, tenantid int) (Use
 
 }
 
-func (auth *Auth) UpdateUserOTP(user Tbluser) error {
+func (auth *Auth) UpdateUserOTP(user Tbluser) (Tbluser, error) {
 
 	ExpirationTime := time.Now().UTC().Add(5 * time.Minute)
 
@@ -371,10 +371,10 @@ func (auth *Auth) UpdateUserOTP(user Tbluser) error {
 
 	if err != nil {
 
-		return err
+		return Tbluser{}, err
 	}
 
-	return nil
+	return user, nil
 
 }
 
