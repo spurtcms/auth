@@ -398,7 +398,7 @@ func (auth *Auth) CheckWebAuth(login *SocialLogin) (string, int, error) {
 
 		if roledetails.Id == 0 {
 
-			role1, _ := Authmodel.CreateRole(Tblrole{Name: "Admin", Description: "Admin role type", IsActive: 1, CreatedOn: createdon, CreatedBy: 1, Slug: "admin"}, auth.DB)
+			role1, _ := Authmodel.CreateRole(Tblrole{Name: "Admin", Description: "Admin role type", IsActive: 1, CreatedOn: createdon, Slug: "admin"}, auth.DB)
 
 			Newuser := Tbluser{
 				FirstName:         login.FirstName,
@@ -433,22 +433,26 @@ func (auth *Auth) CheckWebAuth(login *SocialLogin) (string, int, error) {
 
 				Authmodel.UpdateTenantId(userdetails.Id, tenantID, auth.DB)
 
+				// file, err := os.Open("tenant-defaults.sql")
+
+				// if err != nil {
+
+				// 	return "", 0, nil
+				// }
+
+				// scanner := bufio.NewScanner(file)
+
+				// err := Authmodel.CreateTenantDefaultData(newuser.Id, tenantID, auth.DB)
+
+				// if err != nil {
+
+				// 	return "", 0, nil
+				// }
+
 				err := CreateApiToken(userdetails.Id, tenantID, auth)
+
 				if err != nil {
 
-					return "", 0, nil
-				}
-
-				//To create a aws bucket for each tenant
-				var s3FolderName = userdetails.Username + "_" + strconv.Itoa(tenantID)
-
-				s3Path, err := CreateFolderToS3(s3FolderName, "/", auth)
-				if err != nil {
-					return "", 0, nil
-				}
-
-				err = Authmodel.UpdateS3FolderName(tenantID, userdetails.Id, s3Path, auth.DB)
-				if err != nil {
 					return "", 0, nil
 				}
 			}
@@ -480,7 +484,7 @@ func (auth *Auth) CheckWebAuth(login *SocialLogin) (string, int, error) {
 			}
 
 			if role.Slug == "admin" {
-				tenantID, err = Authmodel.CreateTenantid(&Iddd, auth.DB)
+				tenantID, err := Authmodel.CreateTenantid(&Iddd, auth.DB)
 				if err != nil {
 					fmt.Println("Tenant ID not created:", err)
 					return "", 0, nil
@@ -488,23 +492,26 @@ func (auth *Auth) CheckWebAuth(login *SocialLogin) (string, int, error) {
 
 				Authmodel.UpdateTenantId(userdetails.Id, tenantID, auth.DB)
 
-				err := CreateApiToken(userdetails.Id, tenantID, auth)
+				// file, err := os.Open("tenant-defaults.sql")
+
+				// if err != nil {
+
+				// 	return "", 0, nil
+				// }
+
+				// scanner := bufio.NewScanner(file)
+
+				// err = Authmodel.CreateTenantDefaultData(userdetails.Id, tenantID, scanner, auth.DB)
+
+				// if err != nil {
+
+				// 	return "", 0, nil
+				// }
+
+				err = CreateApiToken(userdetails.Id, tenantID, auth)
 
 				if err != nil {
 
-					return "", 0, nil
-				}
-
-				//To create a aws bucket for each tenant
-				var s3FolderName = userdetails.Username + "_" + strconv.Itoa(tenantID)
-
-				s3Path, err := CreateFolderToS3(s3FolderName, "/", auth)
-				if err != nil {
-					return "", 0, nil
-				}
-
-				err = Authmodel.UpdateS3FolderName(tenantID, userdetails.Id, s3Path, auth.DB)
-				if err != nil {
 					return "", 0, nil
 				}
 			}

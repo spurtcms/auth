@@ -1,8 +1,11 @@
 package auth
 
 import (
+	"bufio"
+	"fmt"
+	"strconv"
+	"strings"
 	"time"
-
 	"gorm.io/datatypes"
 	"gorm.io/gorm"
 )
@@ -380,4 +383,76 @@ func (auth authmodel) UpdateS3FolderName(tenantId, userId int, s3FolderPath stri
 	}
 
 	return nil
+}
+
+func (auth authmodel) CreateTenantDefaultData(userId, tenantId int, scanner *bufio.Scanner, db *gorm.DB) error {
+
+	var (
+		defChildCatId, defParentCatId int
+		// tagId, blockId int
+	)
+
+	for scanner.Scan() {
+
+		query := scanner.Text()
+
+		if len(query) > 0 && !strings.HasPrefix(query, "--") {
+
+			currentTime, _ := time.Parse("2006-01-02 15:04:05", time.Now().UTC().Format("2006-01-02 15:04:05"))
+
+			parts := strings.Fields(fmt.Sprint(currentTime))
+
+			lowerQuery := strings.ToLower(query)
+
+			switch {
+
+			case strings.Contains(lowerQuery, "tbl_categories") && strings.Contains(lowerQuery, "insert into"):
+
+				if err := db.Table("tbl_categories").Where("is_deleted=0 and tenant_id=? and parent_id=0", tenantId).Pluck("id", &defParentCatId).Error; err != nil {
+
+					return err
+				}
+
+				if strings.Contains(lowerQuery, "pid") {
+
+					query = strings.ReplaceAll(query, "pid", strconv.Itoa(defParentCatId))
+
+				}
+
+			case strings.Contains(lowerQuery, "tbl_channel_categories") && strings.Contains(lowerQuery, "insert into"):
+
+				if err := db.Table("tbl_categories").Where("is_deleted=0 and tenant_id=? and parent_id=?", tenantId, defParentCatId).Pluck("id", &defChildCatId).Error; err != nil {
+
+					return err
+				}
+
+				if strings.Contains(lowerQuery, "mapcat") {
+
+					mapCategories := fmt.Sprintf("%v,%v", defParentCatId, defChildCatId)
+
+					query = strings.ReplaceAll(query, "mapcat", mapCategories)
+
+				}
+
+			// case strings.Contains(lowerQuery, "tbl_block_tags") && strings.Contains(lowerQuery, "insert into"):
+
+			}
+
+			timeStamp := fmt.Sprintf("%s %s", parts[0], parts[1])
+
+			replacer := strings.NewReplacer("uid", strconv.Itoa(userId), "tid", strconv.Itoa(tenantId), "time", timeStamp)
+
+			finalQuery := replacer.Replace(query)
+
+			if err := db.Exec(finalQuery).Error; err != nil {
+
+				return err
+			}
+
+		}
+
+	}
+
+	return nil
+
 }
