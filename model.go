@@ -3,6 +3,7 @@ package auth
 import (
 	"time"
 
+	"gorm.io/datatypes"
 	"gorm.io/gorm"
 )
 
@@ -176,6 +177,15 @@ type OTP struct {
 	MemberId int
 }
 
+type TblStorageType struct {
+	Id           int
+	Local        string
+	Aws          datatypes.JSONMap `gorm:"type:jsonb"`
+	Azure        datatypes.JSONMap `gorm:"type:jsonb"`
+	Drive        datatypes.JSONMap `gorm:"type:jsonb"`
+	SelectedType string
+}
+
 type authmodel struct{}
 
 var Authmodel authmodel
@@ -284,13 +294,14 @@ func (auth authmodel) UpdateUserOtp(user Tbluser, DB *gorm.DB) error {
 
 func (auth authmodel) CheckRoleByName(rolename string, DB *gorm.DB) (role Tblrole, err error) {
 
-	if err := DB.Debug().Table("tbl_roles").Where("slug =? ", rolename).Find(&role).Error; err != nil {
+	if err := DB.Debug().Table("tbl_roles").Where("slug =? and is_deleted=0 ", rolename).Find(&role).Error; err != nil {
 
 		return Tblrole{}, err
 	}
 
 	return role, err
 }
+
 func (auth authmodel) CreateRole(role Tblrole, DB *gorm.DB) (roledetails Tblrole, err error) {
 
 	if err := DB.Debug().Table("tbl_roles").Create(&role).Error; err != nil {
@@ -343,5 +354,30 @@ func (auth authmodel) CreateTenantApiToken(DB *gorm.DB, tokenDetails *TblGraphql
 	if err := DB.Debug().Create(&tokenDetails).Error; err != nil {
 		return err
 	}
+	return nil
+}
+
+func (auth authmodel) GetStorageValue(DB *gorm.DB) (tblstorgetype TblStorageType, err error) {
+
+	if err := DB.Model(TblStorageType{}).Where("id = 1 ").First(&tblstorgetype).Error; err != nil {
+
+		return TblStorageType{}, err
+	}
+
+	return tblstorgetype, nil
+}
+
+func (auth authmodel) UpdateS3FolderName(tenantId, userId int, s3FolderPath string, DB *gorm.DB) error {
+
+	result := DB.Table("tbl_users").Where("id = ?", userId).Update("s3_folder_name", s3FolderPath)
+	if result.Error != nil {
+		return result.Error
+	}
+
+	result = DB.Table("tbl_mstr_tenants").Where("id = ?", tenantId).Update("s3_storage_path", s3FolderPath)
+	if result.Error != nil {
+		return result.Error
+	}
+
 	return nil
 }
