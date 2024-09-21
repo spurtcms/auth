@@ -24,74 +24,11 @@ INSERT INTO tbl_blocks(title, block_content, cover_image, is_active , prime , cr
 
 INSERT INTO tbl_block_mstr_tags(tag_title, created_by ,created_on,tenant_id ) VALUES ('Default',uid,'time',tid)
 
-INSERT INTO tbl_block_tags (block_id, tag_id, tag_name, created_by , created_on ,tenant_id ) VALUES(1,tagid,'Default',uid,'time',tid)
+-- block tags are inserted in the database based on the number of blocks inserted before in the tbl_blocks
 
-INSERT INTO tbl_block_tags (block_id, tag_id, tag_name, created_by , created_on ,tenant_id ) VALUES (2,1,'Default',uid,'time',tid)
+INSERT INTO tbl_block_tags (block_id, tag_id, tag_name, created_by , created_on ,tenant_id ) VALUES (blid,tagid,'Default',uid,'time',tid)
 
-INSERT INTO tbl_block_tags (block_id, tag_id, tag_name, created_by , created_on ,tenant_id ) VALUES (3,tagid,'Default',uid,'time',tid)
-
-INSERT INTO tbl_block_tags (block_id, tag_id, tag_name, created_by , created_on ,tenant_id ) VALUES (4,tagid,'Default',uid,'time',tid)
-
-INSERT INTO tbl_block_tags (block_id, tag_id, tag_name, created_by , created_on ,tenant_id ) VALUES (5,tagid,'Default',uid,'time',tid)
-
-INSERT INTO tbl_block_tags (block_id, tag_id, tag_name, created_by , created_on ,tenant_id ) VALUES (6,tagid,'Default',uid,'time',tid)
-
-INSERT INTO tbl_block_tags (block_id, tag_id, tag_name, created_by , created_on ,tenant_id ) VALUES (7,tagid,'Default',uid,'time',tid)
-
-INSERT INTO tbl_block_tags (block_id, tag_id, tag_name, created_by , created_on ,tenant_id ) VALUES (8,tagid,'Default',uid,'time',tid)
-
-INSERT INTO tbl_block_tags (block_id, tag_id, tag_name, created_by , created_on ,tenant_id ) VALUES (9,tagid,'Default',uid,'time',tid)
-
-INSERT INTO tbl_block_tags (block_id, tag_id, tag_name, created_by , created_on ,tenant_id ) VALUES (10,tagid,'Default',uid,'time',tid)
-
-INSERT INTO tbl_block_tags (block_id, tag_id, tag_name, created_by , created_on ,tenant_id ) VALUES (11,tagid,'Default',uid,'time',tid)
-
-INSERT INTO tbl_block_tags (block_id, tag_id, tag_name, created_by , created_on ,tenant_id ) VALUES (12,tagid,'Default',uid,'time',tid)
-
-INSERT INTO tbl_block_tags (block_id, tag_id, tag_name, created_by , created_on ,tenant_id ) VALUES (13,tagid,'Default',uid,'time',tid)
-
-INSERT INTO tbl_block_tags (block_id, tag_id, tag_name, created_by , created_on ,tenant_id ) VALUES (14,tagid,'Default',uid,'time',tid)
-
-INSERT INTO tbl_block_tags (block_id, tag_id, tag_name, created_by , created_on ,tenant_id ) VALUES (15,tagid,'Default',uid,'time',tid)
-
-INSERT INTO tbl_block_tags (block_id, tag_id, tag_name, created_by , created_on ,tenant_id ) VALUES (16,tagid,'Default',uid,'time',tid) 
-
-INSERT INTO tbl_block_tags (block_id, tag_id, tag_name, created_by , created_on ,tenant_id ) VALUES (17,tagid,'Default',uid,'time',tid)
-
-INSERT INTO tbl_block_tags (block_id, tag_id, tag_name, created_by , created_on ,tenant_id ) VALUES (18,tagid,'Default',uid,'time',tid)
-
-INSERT INTO tbl_block_collections (user_id ,block_id,tenant_id) VALUES (uid,blid,tid),(uid,2,tid),(uid,3,tid)
+-- block collections are inserted in the database based on the number of blocks inserted before in the tbl_blocks
 
 INSERT INTO tbl_block_collections (user_id ,block_id,tenant_id) VALUES (uid,blid,tid)
 
-INSERT INTO tbl_block_collections (user_id ,block_id,tenant_id) VALUES (uid,blid,tid)
-
-INSERT INTO tbl_block_collections (user_id ,block_id,tenant_id) VALUES (uid,blid,tid)
-
-INSERT INTO tbl_block_collections (user_id ,block_id,tenant_id) VALUES (uid,blid,tid)
-
-INSERT INTO tbl_block_collections (user_id ,block_id,tenant_id) VALUES (uid,blid,tid)
-
-INSERT INTO tbl_block_collections (user_id ,block_id,tenant_id) VALUES (uid,blid,tid)
-
-INSERT INTO tbl_block_collections (user_id ,block_id,tenant_id) VALUES (uid,blid,tid)
-
-INSERT INTO tbl_block_collections (user_id ,block_id,tenant_id) VALUES (uid,blid,tid)
-
-INSERT INTO tbl_block_collections (user_id ,block_id,tenant_id) VALUES (uid,blid,tid)
-
-INSERT INTO tbl_block_collections (user_id ,block_id,tenant_id) VALUES (uid,blid,tid)
-
-INSERT INTO tbl_block_collections (user_id ,block_id,tenant_id) VALUES (uid,blid,tid)
-
-INSERT INTO tbl_block_collections (user_id ,block_id,tenant_id) VALUES (uid,blid,tid)
-
-INSERT INTO tbl_block_collections (user_id ,block_id,tenant_id) VALUES (uid,blid,tid)
-
-INSERT INTO tbl_block_collections (user_id ,block_id,tenant_id) VALUES (uid,blid,tid)
-
-INSERT INTO tbl_block_collections (user_id ,block_id,tenant_id) VALUES (uid,blid,tid)
-
-INSERT INTO tbl_block_collections (user_id ,block_id,tenant_id) VALUES (uid,blid,tid)
-
-INSERT INTO tbl_block_collections (user_id ,block_id,tenant_id) VALUES (uid,blid,tid)

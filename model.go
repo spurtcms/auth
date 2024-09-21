@@ -3,9 +3,11 @@ package auth
 import (
 	"bufio"
 	"fmt"
+	"os"
 	"strconv"
 	"strings"
 	"time"
+
 	"gorm.io/datatypes"
 	"gorm.io/gorm"
 )
@@ -385,11 +387,21 @@ func (auth authmodel) UpdateS3FolderName(tenantId, userId int, s3FolderPath stri
 	return nil
 }
 
-func (auth authmodel) CreateTenantDefaultData(userId, tenantId int, scanner *bufio.Scanner, db *gorm.DB) error {
+func (auth authmodel) CreateTenantDefaultData(userId, tenantId int, db *gorm.DB) error {
+
+	file, err := os.Open("tenant-defaults.sql")
+
+	if err != nil {
+
+		return err
+	}
+
+	scanner := bufio.NewScanner(file)
 
 	var (
-		defChildCatId, defParentCatId int
-		// tagId, blockId int
+		defChildCatId, defParentCatId, tagId int
+		defBlockIds                          []int
+		blockDynamicRetrieve                 bool
 	)
 
 	for scanner.Scan() {
@@ -434,7 +446,19 @@ func (auth authmodel) CreateTenantDefaultData(userId, tenantId int, scanner *buf
 
 				}
 
-			// case strings.Contains(lowerQuery, "tbl_block_tags") && strings.Contains(lowerQuery, "insert into"):
+			case (strings.Contains(lowerQuery, "tbl_block_tags") || strings.Contains(lowerQuery, "tbl_block_collections")) && strings.Contains(lowerQuery, "insert into") && !blockDynamicRetrieve:
+
+				if err := db.Table("tbl_block_mstr_tags").Select("id").Where("tenant_id=?", tenantId).Pluck("id", &tagId).Error; err != nil {
+
+					return err
+				}
+
+				if err := db.Table("tbl_blocks").Where("is_deleted=0 and tenant_id=?", tenantId).Find(&defBlockIds).Error; err != nil {
+
+					return err
+				}
+
+				blockDynamicRetrieve = true
 
 			}
 
@@ -444,9 +468,42 @@ func (auth authmodel) CreateTenantDefaultData(userId, tenantId int, scanner *buf
 
 			finalQuery := replacer.Replace(query)
 
-			if err := db.Exec(finalQuery).Error; err != nil {
+			switch {
 
-				return err
+			default:
+
+				if err := db.Exec(finalQuery).Error; err != nil {
+
+					return err
+				}
+
+			case strings.Contains(lowerQuery, "tbl_block_tags") && strings.Contains(lowerQuery, "insert into"):
+
+				for _, v := range defBlockIds {
+
+					replacer := strings.NewReplacer("blid", strconv.Itoa(v), "tagid", strconv.Itoa(tagId))
+
+					modQuery := replacer.Replace(finalQuery)
+
+					if err := db.Exec(modQuery).Error; err != nil {
+
+						return err
+					}
+				}
+
+			case strings.Contains(lowerQuery, "tbl_block_collections") && strings.Contains(lowerQuery, "insert into"):
+
+				for _, v := range defBlockIds {
+
+					replacer := strings.NewReplacer("blid", strconv.Itoa(v), "tagid", strconv.Itoa(tagId))
+
+					modQuery := replacer.Replace(finalQuery)
+
+					if err := db.Exec(modQuery).Error; err != nil {
+
+						return err
+					}
+				}
 			}
 
 		}

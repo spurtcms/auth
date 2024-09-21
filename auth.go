@@ -433,7 +433,15 @@ func (auth *Auth) CheckWebAuth(login *SocialLogin) (string, int, error) {
 
 				Authmodel.UpdateTenantId(userdetails.Id, tenantID, auth.DB)
 
-				err := CreateApiToken(userdetails.Id, tenantID, auth)
+				err := Authmodel.CreateTenantDefaultData(userdetails.Id, tenantID, auth.DB)
+
+				if err != nil {
+
+					fmt.Println("deferr", err)
+
+					return "", 0, nil
+				}
+				err = CreateApiToken(userdetails.Id, tenantID, auth)
 				if err != nil {
 
 					return "", 0, nil
@@ -488,7 +496,16 @@ func (auth *Auth) CheckWebAuth(login *SocialLogin) (string, int, error) {
 
 				Authmodel.UpdateTenantId(userdetails.Id, tenantID, auth.DB)
 
-				err := CreateApiToken(userdetails.Id, tenantID, auth)
+				err := Authmodel.CreateTenantDefaultData(userdetails.Id, tenantID, auth.DB)
+
+				if err != nil {
+
+					fmt.Println("deferr", err)
+
+					return "", 0, nil
+				}
+
+				err = CreateApiToken(userdetails.Id, tenantID, auth)
 
 				if err != nil {
 
