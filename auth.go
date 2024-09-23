@@ -435,6 +435,8 @@ func (auth *Auth) CheckWebAuth(login *SocialLogin) (string, Tbluser, bool, error
 			return "", Tbluser{}, false, nil
 		}
 
+		userinfo.TenantId = tenantID
+
 		err = CreateApiToken(userinfo.Id, tenantID, auth)
 
 		if err != nil {
