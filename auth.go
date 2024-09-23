@@ -378,173 +378,101 @@ func (auth *Auth) UpdateUserOTP(user Tbluser) (Tbluser, error) {
 
 }
 
-func (auth *Auth) CheckWebAuth(login *SocialLogin) (string, int, error) {
+func (auth *Auth) CheckWebAuth(login *SocialLogin) (string, Tbluser, bool, error) {
 
 	userinfo, _ := Authmodel.GetUserByEmail(login.Email, auth.DB, -1)
 
-	fmt.Println(userinfo)
-	var userdetails Tbluser
-
-	var tenantID int
-	var token1 string
-
 	createdon, _ := time.Parse("2006-01-02 15:04:05", time.Now().UTC().Format("2006-01-02 15:04:05"))
 
+	var isNewUser bool
+
 	if userinfo.Email != login.Email {
+
+		isNewUser = true
 
 		roledetails, _ := Authmodel.CheckRoleByName("admin", auth.DB)
 
 		uvuid := (uuid.New()).String()
 
+		var newRoleId int
+
 		if roledetails.Id == 0 {
 
-			role1, _ := Authmodel.CreateRole(Tblrole{Name: "Admin", Description: "Admin role type", IsActive: 1, CreatedOn: createdon, CreatedBy: 1, Slug: "admin"}, auth.DB)
+			newrole, _ := Authmodel.CreateRole(Tblrole{Name: "Admin", Description: "Admin role type", IsActive: 1, CreatedOn: createdon, CreatedBy: 1, Slug: "admin"}, auth.DB)
 
-			Newuser := Tbluser{
-				FirstName:         login.FirstName,
-				LastName:          login.LastName,
-				Email:             login.Email,
-				Username:          login.GivenName,
-				RoleId:            role1.Id,
-				IsActive:          1,
-				CreatedOn:         createdon,
-				DefaultLanguageId: 1,
-				TenantId:          tenantID,
-				Uuid:              uvuid,
-			}
-
-			userdetails, _ = Authmodel.CreateUser(&Newuser, auth.DB)
-
-			role, err := Authmodel.GetRoleById(role1.Id, auth.DB)
-			if err != nil {
-				fmt.Printf("get role details error: %s", err)
-			}
-
-			Iddd := TblMstrTenant{
-				TenantId: userdetails.Id,
-			}
-
-			if role.Slug == "admin" {
-				tenantID, err = Authmodel.CreateTenantid(&Iddd, auth.DB)
-				if err != nil {
-					fmt.Println("Tenant ID not created:", err)
-					return "", 0, nil
-				}
-
-				Authmodel.UpdateTenantId(userdetails.Id, tenantID, auth.DB)
-
-				err := Authmodel.CreateTenantDefaultData(userdetails.Id, tenantID, auth.DB)
-
-				if err != nil {
-
-					fmt.Println("deferr", err)
-
-					return "", 0, nil
-				}
-				err = CreateApiToken(userdetails.Id, tenantID, auth)
-				if err != nil {
-
-					return "", 0, nil
-				}
-
-				//To create a aws bucket for each tenant
-				var s3FolderName = userdetails.Username + "_" + strconv.Itoa(tenantID)
-
-				s3Path, err := CreateFolderToS3(s3FolderName, "/", auth)
-				if err != nil {
-					return "", 0, nil
-				}
-
-				err = Authmodel.UpdateS3FolderName(tenantID, userdetails.Id, s3Path, auth.DB)
-				if err != nil {
-					return "", 0, nil
-				}
-			}
+			newRoleId = newrole.Id
 
 		} else {
 
-			Newuser := Tbluser{
-				FirstName:         login.FirstName,
-				LastName:          login.LastName,
-				Email:             login.Email,
-				Username:          login.GivenName,
-				RoleId:            roledetails.Id,
-				IsActive:          1,
-				CreatedOn:         createdon,
-				DefaultLanguageId: 1,
-				TenantId:          tenantID,
-				Uuid:              uvuid,
-			}
-
-			userdetails, _ = Authmodel.CreateUser(&Newuser, auth.DB)
-
-			role, err := Authmodel.GetRoleById(roledetails.Id, auth.DB)
-			if err != nil {
-				fmt.Printf("get role details error: %s", err)
-			}
-			// fmt.Println("role:",role)
-			Iddd := TblMstrTenant{
-				TenantId: userdetails.Id,
-			}
-
-			if role.Slug == "admin" {
-				tenantID, err = Authmodel.CreateTenantid(&Iddd, auth.DB)
-				if err != nil {
-					fmt.Println("Tenant ID not created:", err)
-					return "", 0, nil
-				}
-
-				Authmodel.UpdateTenantId(userdetails.Id, tenantID, auth.DB)
-
-				err := Authmodel.CreateTenantDefaultData(userdetails.Id, tenantID, auth.DB)
-
-				if err != nil {
-
-					fmt.Println("deferr", err)
-
-					return "", 0, nil
-				}
-
-				err = CreateApiToken(userdetails.Id, tenantID, auth)
-
-				if err != nil {
-
-					return "", 0, nil
-				}
-
-				//To create a aws bucket for each tenant
-				var s3FolderName = userdetails.Username + "_" + strconv.Itoa(tenantID)
-
-				s3Path, err := CreateFolderToS3(s3FolderName, "/", auth)
-				if err != nil {
-					return "", 0, nil
-				}
-
-				err = Authmodel.UpdateS3FolderName(tenantID, userdetails.Id, s3Path, auth.DB)
-				if err != nil {
-					return "", 0, nil
-				}
-			}
-
+			newRoleId = roledetails.Id
 		}
 
-		auth.UserId = userdetails.Id
+		newUser := Tbluser{
+			FirstName:         login.FirstName,
+			LastName:          login.LastName,
+			Email:             login.Email,
+			Username:          login.GivenName,
+			IsActive:          1,
+			CreatedOn:         createdon,
+			DefaultLanguageId: 1,
+			Uuid:              uvuid,
+			RoleId:            newRoleId,
+		}
 
-		auth.RoleId = userdetails.RoleId
+		userinfo, _ = Authmodel.CreateUser(&newUser, auth.DB)
 
-		token1, _ = auth.CreateToken()
+		tenantID, err := Authmodel.CreateTenantid(&TblMstrTenant{TenantId: userinfo.Id}, auth.DB)
 
-	} else {
+		if err != nil {
+			fmt.Println("Tenant ID not created:", err)
+			return "", Tbluser{}, false, nil
+		}
 
-		auth.UserId = userinfo.Id
+		err = Authmodel.UpdateTenantId(userinfo.Id, tenantID, auth.DB)
 
-		auth.RoleId = userinfo.RoleId
+		if err != nil {
 
-		token1, _ = auth.CreateToken()
+			return "", Tbluser{}, false, nil
+		}
+
+		err = CreateApiToken(userinfo.Id, tenantID, auth)
+
+		if err != nil {
+
+			return "", Tbluser{}, false, nil
+		}
+
+		//To create a aws bucket for each tenant
+		var s3FolderName = userinfo.Username + "_" + strconv.Itoa(tenantID)
+
+		s3Path, err := CreateFolderToS3(s3FolderName, "/", auth)
+
+		if err != nil {
+
+			return "", Tbluser{}, false, nil
+		}
+
+		err = Authmodel.UpdateS3FolderName(tenantID, userinfo.Id, s3Path, auth.DB)
+
+		if err != nil {
+
+			return "", Tbluser{}, false, nil
+		}
 
 	}
 
-	return token1, auth.UserId, nil
+	auth.UserId = userinfo.Id
+
+	auth.RoleId = userinfo.RoleId
+
+	token, err := auth.CreateToken()
+
+	if err != nil {
+
+		return "", Tbluser{}, false, nil
+	}
+
+	return token, userinfo, isNewUser, nil
 }
 
 func GenerateTenantApiToken(length int) (string, error) {
