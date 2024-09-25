@@ -382,11 +382,6 @@ func (auth *Auth) CheckWebAuth(login *SocialLogin) (string, Tbluser, bool, error
 
 	userinfo, _ := Authmodel.GetUserByEmail(login.Email, auth.DB, -1)
 
-	if userinfo.IsActive == 0  {
-
-		return "", Tbluser{}, false, ErrorInactive
-	}
-
 	createdon, _ := time.Parse("2006-01-02 15:04:05", time.Now().UTC().Format("2006-01-02 15:04:05"))
 
 	var isNewUser bool
@@ -466,6 +461,11 @@ func (auth *Auth) CheckWebAuth(login *SocialLogin) (string, Tbluser, bool, error
 			return "", Tbluser{}, false, nil
 		}
 
+	}
+
+	if userinfo.IsActive == 0  {
+
+		return "", Tbluser{}, false, ErrorInactive
 	}
 
 	auth.UserId = userinfo.Id

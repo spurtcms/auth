@@ -273,12 +273,13 @@ func (auth authmodel) GetMemberDetailsByMemberId(MemberDetails *TblMember, membe
 
 	return nil
 }
+
 func (auth authmodel) GetUserByEmail(email string, DB *gorm.DB, tenantid int) (user Tbluser, err error) {
 
 	query := DB.Debug().Table("tbl_users").Where("is_deleted = 0 AND email = ?", email)
 
 	if tenantid != -1 {
-		query = query.Where("(tenant_id IS NULL OR tenant_id = ?)", tenantid)
+		query = query.Where("tenant_id = ?", tenantid)
 	}
 
 	if err := query.First(&user).Error; err != nil {
@@ -289,7 +290,7 @@ func (auth authmodel) GetUserByEmail(email string, DB *gorm.DB, tenantid int) (u
 }
 func (auth authmodel) UpdateUserOtp(user Tbluser, DB *gorm.DB) error {
 
-	result := DB.Table("tbl_users").Where("id = ? and (tenant_id is NULL or tenant_id=?)", user.Id, user.TenantId).UpdateColumns(map[string]interface{}{"modified_on": user.ModifiedOn, "modified_by": user.Id, "otp": user.Otp, "otp_expiry": user.OtpExpiry})
+	result := DB.Table("tbl_users").Where("id = ? and  tenant_id=?", user.Id, user.TenantId).UpdateColumns(map[string]interface{}{"modified_on": user.ModifiedOn, "modified_by": user.Id, "otp": user.Otp, "otp_expiry": user.OtpExpiry})
 	if result.Error != nil {
 		return result.Error
 	}
