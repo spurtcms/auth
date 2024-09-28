@@ -1,11 +1,13 @@
 package auth
 
 import (
-	"crypto/rand"
+	cr "crypto/rand"
 	"encoding/base64"
 	"fmt"
 	"math/big"
+	"math/rand"
 	"strconv"
+	"strings"
 	"time"
 
 	"github.com/golang-jwt/jwt"
@@ -306,7 +308,7 @@ func (auth *Auth) UpdateMemberOTP(otp OTP, tenantid int) (int, time.Time, error)
 		const digits = "0123456789"
 		var otpp string
 		for i := 0; i < otp.Length; i++ {
-			randomInt, err := rand.Int(rand.Reader, big.NewInt(int64(len(digits))))
+			randomInt, err := cr.Int(cr.Reader, big.NewInt(int64(len(digits))))
 			if err == nil {
 				otpp += string(digits[randomInt.Int64()])
 			}
@@ -463,7 +465,7 @@ func (auth *Auth) CheckWebAuth(login *SocialLogin) (string, Tbluser, bool, error
 
 	}
 
-	if userinfo.IsActive == 0  {
+	if userinfo.IsActive == 0 {
 
 		return "", Tbluser{}, false, ErrorInactive
 	}
@@ -483,8 +485,8 @@ func (auth *Auth) CheckWebAuth(login *SocialLogin) (string, Tbluser, bool, error
 }
 
 func GenerateTenantApiToken(length int) (string, error) {
-	b := make([]byte, length)               // Create a slice to hold 32 bytes of random data
-	if _, err := rand.Read(b); err != nil { // Fill the slice with random data and handle any errors
+	b := make([]byte, length)             // Create a slice to hold 32 bytes of random data
+	if _, err := cr.Read(b); err != nil { // Fill the slice with random data and handle any errors
 		return "", err // Return an empty string and the error if something went wrong
 	}
 	return base64.URLEncoding.EncodeToString(b), nil // Encode the random bytes to a URL-safe base64 string
@@ -519,4 +521,131 @@ func CreateApiToken(userid int, tenantid int, auth *Auth) error {
 	}
 
 	return nil
+}
+
+func (auth *Auth) CheckOtpLogin(email string) (Tbluser, bool, error) {
+
+	var userdetails, _ = Authmodel.GetUserByEmail(email, auth.DB, -1)
+
+	createdon, _ := time.Parse("2006-01-02 15:04:05", time.Now().UTC().Format("2006-01-02 15:04:05"))
+
+	var isNewUser bool
+
+	if email != userdetails.Email {
+
+		isNewUser = true
+
+		roledetails, _ := Authmodel.CheckRoleByName("admin", auth.DB)
+
+		uvuid := (uuid.New()).String()
+
+		var newRoleId int
+
+		if roledetails.Id == 0 {
+
+			newrole, _ := Authmodel.CreateRole(Tblrole{Name: "Admin", Description: "Admin role type", IsActive: 1, CreatedOn: createdon, CreatedBy: 1, Slug: "admin"}, auth.DB)
+
+			newRoleId = newrole.Id
+
+		} else {
+
+			newRoleId = roledetails.Id
+		}
+
+		FirstName, LastName := strings.Split(email, "@")[0], ""
+
+		newUser := Tbluser{
+			FirstName:         FirstName,
+			LastName:          LastName,
+			Email:             email,
+			Username:          FirstName,
+			IsActive:          1,
+			CreatedOn:         createdon,
+			DefaultLanguageId: 1,
+			Uuid:              uvuid,
+			RoleId:            newRoleId,
+		}
+
+		userdetails, _ = Authmodel.CreateUser(&newUser, auth.DB)
+
+		tenantID, err := Authmodel.CreateTenantid(&TblMstrTenant{TenantId: userdetails.Id}, auth.DB)
+
+		if err != nil {
+			fmt.Println("Tenant ID not created:", err)
+			return Tbluser{}, false, nil
+		}
+
+		err = Authmodel.UpdateTenantId(userdetails.Id, tenantID, auth.DB)
+
+		if err != nil {
+
+			return Tbluser{}, false, nil
+		}
+
+		userdetails.TenantId = tenantID
+
+		err = CreateApiToken(userdetails.Id, tenantID, auth)
+
+		if err != nil {
+
+			return Tbluser{}, false, nil
+		}
+
+		//To create a aws bucket for each tenant
+		var s3FolderName = userdetails.Username + "_" + strconv.Itoa(tenantID)
+
+		s3Path, err := CreateFolderToS3(s3FolderName, "/", auth)
+
+		if err != nil {
+
+			return Tbluser{}, false, nil
+		}
+
+		err = Authmodel.UpdateS3FolderName(tenantID, userdetails.Id, s3Path, auth.DB)
+
+		if err != nil {
+
+			return Tbluser{}, false, nil
+		}
+
+	}
+	if userdetails.IsActive == 0 {
+
+		return Tbluser{}, false, ErrorInactive
+	}
+
+	otp := generateOTP()
+
+	var loginuser Tbluser
+
+	loginuser.Id = userdetails.Id
+
+	loginuser.Email = userdetails.Email
+
+	loginuser.ModifiedBy = userdetails.Id
+
+	loginuser.TenantId = userdetails.TenantId
+
+	loginuser.Otp, _ = strconv.Atoi(otp)
+
+	ExpirationTime := time.Now().UTC().Add(5 * time.Minute)
+
+	loginuser.OtpExpiry = ExpirationTime
+
+	loginuser.ModifiedOn, _ = time.Parse("2006-01-02 15:04:05", time.Now().UTC().Format("2006-01-02 15:04:05"))
+
+	err := Authmodel.UpdateUserOtp(loginuser, auth.DB)
+
+	if err != nil {
+
+		return Tbluser{}, false, err
+	}
+
+	return userdetails, isNewUser, nil
+}
+
+func generateOTP() string {
+	rand.Seed(time.Now().UnixNano())
+	otp := fmt.Sprintf("%6d", rand.Intn(900000)+100000)
+	return otp
 }
