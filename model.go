@@ -65,6 +65,7 @@ type TblMstrTenant struct {
 	DeletedBy int       `gorm:"type:integer;DEFAULT:NULL"`
 	IsDeleted int       `gorm:"type:integer;DEFAULT:0"`
 }
+
 type Tblrole struct {
 	Id          int       `gorm:"column:id"`
 	Name        string    `gorm:"column:name"`
@@ -80,23 +81,7 @@ type Tblrole struct {
 	User        []Tbluser `gorm:"-"`
 	TenantId    int       `gorm:"column:tenant_id;DEFAULT:NULL"`
 }
-type TblGraphqlSettings struct {
-	Id          int
-	TokenName   string
-	Description string
-	Duration    string
-	CreatedBy   int `gorm:"DEFAULT:NULL"`
-	CreatedOn   time.Time
-	ModifiedBy  int       `gorm:"DEFAULT:NULL"`
-	ModifiedOn  time.Time `gorm:"DEFAULT:NULL"`
-	DeletedBy   int       `gorm:"DEFAULT:NULL"`
-	DeletedOn   time.Time `gorm:"DEFAULT:NULL"`
-	IsDeleted   int       `gorm:"DEFAULT:0"`
-	Token       string
-	IsDefault   int       `gorm:"DEFAULT:0"`
-	ExpiryTime  time.Time `gorm:"DEFAULT:NULL"`
-	TenantId    int
-}
+
 type MemberLoginCheck struct {
 	Username             string
 	Email                string
@@ -354,12 +339,6 @@ func (auth authmodel) UpdateTenantId(UserId int, Tenantid int, DB *gorm.DB) erro
 		return result.Error
 	}
 
-	return nil
-}
-func (auth authmodel) CreateTenantApiToken(DB *gorm.DB, tokenDetails *TblGraphqlSettings) error {
-	if err := DB.Debug().Create(&tokenDetails).Error; err != nil {
-		return err
-	}
 	return nil
 }
 

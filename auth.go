@@ -2,7 +2,6 @@ package auth
 
 import (
 	cr "crypto/rand"
-	"encoding/base64"
 	"fmt"
 	"math/big"
 	"math/rand"
@@ -439,13 +438,6 @@ func (auth *Auth) CheckWebAuth(login *SocialLogin) (string, Tbluser, bool, error
 
 		userinfo.TenantId = tenantID
 
-		err = CreateApiToken(userinfo.Id, tenantID, auth)
-
-		if err != nil {
-
-			return "", Tbluser{}, false, nil
-		}
-
 		//To create a aws bucket for each tenant
 		var s3FolderName = userinfo.Username + "_" + strconv.Itoa(tenantID)
 
@@ -482,45 +474,6 @@ func (auth *Auth) CheckWebAuth(login *SocialLogin) (string, Tbluser, bool, error
 	}
 
 	return token, userinfo, isNewUser, nil
-}
-
-func GenerateTenantApiToken(length int) (string, error) {
-	b := make([]byte, length)             // Create a slice to hold 32 bytes of random data
-	if _, err := cr.Read(b); err != nil { // Fill the slice with random data and handle any errors
-		return "", err // Return an empty string and the error if something went wrong
-	}
-	return base64.URLEncoding.EncodeToString(b), nil // Encode the random bytes to a URL-safe base64 string
-}
-
-func CreateApiToken(userid int, tenantid int, auth *Auth) error {
-
-	ApiToken, err := GenerateTenantApiToken(64)
-	if err != nil {
-		return err
-	}
-	createdon, _ := time.Parse("2006-01-02 15:04:05", time.Now().UTC().Format("2006-01-02 15:04:05"))
-
-	tokenDetails := TblGraphqlSettings{
-		TokenName:   "Default Token",
-		Description: "Default token",
-		Duration:    "Unlimited",
-		CreatedOn:   createdon,
-		Token:       ApiToken,
-		IsDefault:   1,
-		TenantId:    tenantid}
-	switch {
-	case userid != 0:
-		tokenDetails.CreatedBy = userid
-	}
-
-	err1 := Authmodel.CreateTenantApiToken(auth.DB, &tokenDetails)
-	if err1 != nil {
-		fmt.Println("tenant api token not created:", err)
-		fmt.Printf("tenant api token not created: %v", err)
-		return nil
-	}
-
-	return nil
 }
 
 func (auth *Auth) CheckOtpLogin(email string) (Tbluser, bool, error) {
@@ -584,13 +537,6 @@ func (auth *Auth) CheckOtpLogin(email string) (Tbluser, bool, error) {
 
 		userdetails.TenantId = tenantID
 
-		err = CreateApiToken(userdetails.Id, tenantID, auth)
-
-		if err != nil {
-
-			return Tbluser{}, false, nil
-		}
-
 		//To create a aws bucket for each tenant
 		var s3FolderName = userdetails.Username + "_" + strconv.Itoa(tenantID)
 
@@ -635,6 +581,13 @@ func (auth *Auth) CheckOtpLogin(email string) (Tbluser, bool, error) {
 	loginuser.ModifiedOn, _ = time.Parse("2006-01-02 15:04:05", time.Now().UTC().Format("2006-01-02 15:04:05"))
 
 	err := Authmodel.UpdateUserOtp(loginuser, auth.DB)
+
+	if err != nil {
+
+		return Tbluser{}, false, err
+	}
+
+	userdetails.Otp,err = strconv.Atoi(otp)
 
 	if err != nil {
 
