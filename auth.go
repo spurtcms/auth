@@ -329,34 +329,75 @@ func (auth *Auth) UpdateMemberOTP(otp OTP, tenantid int) (int, time.Time, error)
 	return genOtp, otp_expiry, nil
 }
 
-func (auth *Auth) OtpLoginVerification(otp int, email string, tenantid int) (User Tbluser, token string, err error) {
+func (auth *Auth) OtpLoginVerification(otp int, email string, tenantid int) (Tbluser, string, bool, error) {
 
 	userdet, err := Authmodel.GetUserByEmail(email, auth.DB, tenantid)
 
+	var isNewUser bool
+
 	if err != nil {
 
-		return Tbluser{}, "", fmt.Errorf("")
+		return Tbluser{}, "", false, fmt.Errorf("")
 	}
 
 	currentTime := time.Now().UTC()
 
 	if userdet.Otp != otp {
 
-		return Tbluser{}, "", ErrorInvalidOTP
+		return Tbluser{}, "", false, ErrorInvalidOTP
 	}
 
 	if !userdet.OtpExpiry.After(currentTime) {
 
-		return Tbluser{}, "", ErrorOtpExpiry
+		return Tbluser{}, "", false, ErrorOtpExpiry
 	}
 
+	if tenantid == 0 {
+		
+		isNewUser = true
+
+		tenantID, err := Authmodel.CreateTenantid(&TblMstrTenant{TenantId: userdet.Id}, auth.DB)
+
+		if err != nil {
+			fmt.Println("Tenant ID not created:", err)
+			return Tbluser{}, "", false, nil
+		}
+
+		err = Authmodel.UpdateTenantId(userdet.Id, tenantID, auth.DB)
+
+		if err != nil {
+
+			return Tbluser{}, "", false, nil
+		}
+
+		userdet.TenantId = tenantID
+
+		//To create a aws bucket for each tenant
+		var s3FolderName = userdet.Username + "_" + strconv.Itoa(tenantID)
+
+		s3Path, err := CreateFolderToS3(s3FolderName, "/", auth)
+
+		if err != nil {
+
+			return Tbluser{}, "", false, nil
+		}
+
+		err = Authmodel.UpdateS3FolderName(tenantID, userdet.Id, s3Path, auth.DB)
+
+		if err != nil {
+
+			return Tbluser{}, "", false, nil
+		}
+
+	}
+	
 	auth.UserId = userdet.Id
 
 	auth.RoleId = userdet.RoleId
 
-	token, _ = auth.CreateToken()
+	token, _ := auth.CreateToken()
 
-	return userdet, token, nil
+	return userdet, token, isNewUser, nil
 
 }
 
@@ -476,17 +517,13 @@ func (auth *Auth) CheckWebAuth(login *SocialLogin) (string, Tbluser, bool, error
 	return token, userinfo, isNewUser, nil
 }
 
-func (auth *Auth) CheckOtpLogin(email string) (Tbluser, bool, error) {
+func (auth *Auth) CheckOtpLogin(email string) (Tbluser, error) {
 
 	var userdetails, _ = Authmodel.GetUserByEmail(email, auth.DB, -1)
 
 	createdon, _ := time.Parse("2006-01-02 15:04:05", time.Now().UTC().Format("2006-01-02 15:04:05"))
 
-	var isNewUser bool
-
 	if email != userdetails.Email {
-
-		isNewUser = true
 
 		roledetails, _ := Authmodel.CheckRoleByName("admin", auth.DB)
 
@@ -521,43 +558,10 @@ func (auth *Auth) CheckOtpLogin(email string) (Tbluser, bool, error) {
 
 		userdetails, _ = Authmodel.CreateUser(&newUser, auth.DB)
 
-		tenantID, err := Authmodel.CreateTenantid(&TblMstrTenant{TenantId: userdetails.Id}, auth.DB)
-
-		if err != nil {
-			fmt.Println("Tenant ID not created:", err)
-			return Tbluser{}, false, nil
-		}
-
-		err = Authmodel.UpdateTenantId(userdetails.Id, tenantID, auth.DB)
-
-		if err != nil {
-
-			return Tbluser{}, false, nil
-		}
-
-		userdetails.TenantId = tenantID
-
-		//To create a aws bucket for each tenant
-		var s3FolderName = userdetails.Username + "_" + strconv.Itoa(tenantID)
-
-		s3Path, err := CreateFolderToS3(s3FolderName, "/", auth)
-
-		if err != nil {
-
-			return Tbluser{}, false, nil
-		}
-
-		err = Authmodel.UpdateS3FolderName(tenantID, userdetails.Id, s3Path, auth.DB)
-
-		if err != nil {
-
-			return Tbluser{}, false, nil
-		}
-
 	}
 	if userdetails.IsActive == 0 {
 
-		return Tbluser{}, false, ErrorInactive
+		return Tbluser{}, ErrorInactive
 	}
 
 	otp := generateOTP()
@@ -584,17 +588,19 @@ func (auth *Auth) CheckOtpLogin(email string) (Tbluser, bool, error) {
 
 	if err != nil {
 
-		return Tbluser{}, false, err
+		return Tbluser{}, err
 	}
 
-	userdetails.Otp,err = strconv.Atoi(otp)
+	userdetails.Otp, err = strconv.Atoi(otp)
+
+	userdetails.OtpExpiry = ExpirationTime
 
 	if err != nil {
 
-		return Tbluser{}, false, err
+		return Tbluser{}, err
 	}
 
-	return userdetails, isNewUser, nil
+	return userdetails, nil
 }
 
 func generateOTP() string {
