@@ -15,7 +15,7 @@ import (
 	"golang.org/x/crypto/bcrypt"
 )
 
-// AuthSetup used initialize auth configruation
+// AuthSetup used to initialize auth configruation
 func AuthSetup(conf Config) *Auth {
 
 	migration.AutoMigration(conf.DB, conf.DataBaseType)
@@ -75,7 +75,7 @@ func (auth *Auth) Checklogin(Username string, Password string, tenantid int) (st
 	return token, user.Id, nil
 }
 
-// CreateToken creates a token
+// CreateToken function used to creates a jwt token
 func (auth *Auth) CreateToken() (string, error) {
 
 	atClaims := jwt.MapClaims{}
@@ -329,6 +329,7 @@ func (auth *Auth) UpdateMemberOTP(otp OTP, tenantid int) (int, time.Time, error)
 	return genOtp, otp_expiry, nil
 }
 
+// login otp verification
 func (auth *Auth) OtpLoginVerification(otp int, email string, tenantid int) (Tbluser, string, bool, error) {
 
 	userdet, err := Authmodel.GetUserByEmail(email, auth.DB, tenantid)
