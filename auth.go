@@ -15,7 +15,7 @@ import (
 	"golang.org/x/crypto/bcrypt"
 )
 
-// AuthSetup used to initialize auth configruation
+// AuthSetup used initialize auth configruation
 func AuthSetup(conf Config) *Auth {
 
 	migration.AutoMigration(conf.DB, conf.DataBaseType)
@@ -75,7 +75,7 @@ func (auth *Auth) Checklogin(Username string, Password string, tenantid int) (st
 	return token, user.Id, nil
 }
 
-// CreateToken function used to creates a jwt token
+// CreateToken creates a token
 func (auth *Auth) CreateToken() (string, error) {
 
 	atClaims := jwt.MapClaims{}
@@ -329,7 +329,6 @@ func (auth *Auth) UpdateMemberOTP(otp OTP, tenantid int) (int, time.Time, error)
 	return genOtp, otp_expiry, nil
 }
 
-// login otp verification
 func (auth *Auth) OtpLoginVerification(otp int, email string, tenantid int) (Tbluser, string, bool, error) {
 
 	userdet, err := Authmodel.GetUserByEmail(email, auth.DB, tenantid)
@@ -354,7 +353,7 @@ func (auth *Auth) OtpLoginVerification(otp int, email string, tenantid int) (Tbl
 	}
 
 	if tenantid == 0 {
-		
+
 		isNewUser = true
 
 		tenantID, err := Authmodel.CreateTenantid(&TblMstrTenant{TenantId: userdet.Id}, auth.DB)
@@ -391,7 +390,7 @@ func (auth *Auth) OtpLoginVerification(otp int, email string, tenantid int) (Tbl
 		}
 
 	}
-	
+
 	auth.UserId = userdet.Id
 
 	auth.RoleId = userdet.RoleId
@@ -406,7 +405,7 @@ func (auth *Auth) UpdateUserOTP(user Tbluser) (Tbluser, error) {
 
 	ExpirationTime := time.Now().UTC().Add(5 * time.Minute)
 
-	user.OtpExpiry = ExpirationTime
+	user.OtpExpiry = &ExpirationTime
 
 	user.ModifiedOn, _ = time.Parse("2006-01-02 15:04:05", time.Now().UTC().Format("2006-01-02 15:04:05"))
 
@@ -581,7 +580,7 @@ func (auth *Auth) CheckOtpLogin(email string) (Tbluser, error) {
 
 	ExpirationTime := time.Now().UTC().Add(5 * time.Minute)
 
-	loginuser.OtpExpiry = ExpirationTime
+	loginuser.OtpExpiry = &ExpirationTime
 
 	loginuser.ModifiedOn, _ = time.Parse("2006-01-02 15:04:05", time.Now().UTC().Format("2006-01-02 15:04:05"))
 
@@ -594,7 +593,7 @@ func (auth *Auth) CheckOtpLogin(email string) (Tbluser, error) {
 
 	userdetails.Otp, err = strconv.Atoi(otp)
 
-	userdetails.OtpExpiry = ExpirationTime
+	userdetails.OtpExpiry = &ExpirationTime
 
 	if err != nil {
 

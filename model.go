@@ -47,7 +47,7 @@ type Tbluser struct {
 	NameString           string    `gorm:"-"`
 	TenantId             int
 	Otp                  int       `gorm:"column:otp"`
-	OtpExpiry            time.Time `gorm:"column:otp_expiry"`
+	OtpExpiry            *time.Time `gorm:"column:otp_expiry"`
 }
 
 type SocialLogin struct {
