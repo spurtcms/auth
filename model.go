@@ -188,7 +188,19 @@ func IsDeleted(db *gorm.DB) *gorm.DB {
 // check db userlogin
 func (auth authmodel) CheckLogin(username string, Password string, db *gorm.DB) (user Tbluser, err error) {
 
-	if err := db.Table("tbl_users").Where("username = ? and  is_deleted = 0", username).First(&user).Error; err != nil {
+	query := db.Debug().Table("tbl_users")
+
+	if db.Config.Dialector.Name() == "mysql" {
+
+		query = query.Where("BINARY username = ? and  is_deleted = 0", username)
+
+	} else if db.Config.Dialector.Name() == "postgres" {
+
+		query = query.Where("username = ? and  is_deleted = 0", username)
+
+	}
+
+	if err := query.First(&user).Error; err != nil {
 
 		return Tbluser{}, err
 
@@ -196,6 +208,7 @@ func (auth authmodel) CheckLogin(username string, Password string, db *gorm.DB) 
 
 	return user, nil
 }
+
 
 // check email with password
 func (auth authmodel) CheckMemberLoginWithEmail(email string, username string, DB *gorm.DB, tenantid int) (member TblMember, err error) {
