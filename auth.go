@@ -42,7 +42,6 @@ func (auth *Auth) Checklogin(Username string, Password string, tenantid int) (st
 
 	if err != nil {
 
-		fmt.Println(err)
 
 		return "", 0, err
 
