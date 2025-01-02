@@ -607,3 +607,14 @@ func generateOTP() string {
 	otp := fmt.Sprintf("%6d", rand.Intn(900000)+100000)
 	return otp
 }
+
+func (auth *Auth) UpdateS3FolderName(tenantid int, userid int, s3path string) error {
+
+	err := Authmodel.UpdateS3FolderName(tenantid, userid, s3path, auth.DB)
+
+	if err != nil {
+
+		return err
+	}
+	return nil
+}
