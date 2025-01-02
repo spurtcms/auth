@@ -372,21 +372,21 @@ func (auth *Auth) OtpLoginVerification(otp int, email string, tenantid int) (Tbl
 		userdet.TenantId = tenantID
 
 		//To create a aws bucket for each tenant
-		var s3FolderName = userdet.Username + "_" + strconv.Itoa(tenantID)
+		// var s3FolderName = userdet.Username + "_" + strconv.Itoa(tenantID)
 
-		s3Path, err := CreateFolderToS3(s3FolderName, "/", auth)
+		// s3Path, err := CreateFolderToS3(s3FolderName, "/", auth)
 
-		if err != nil {
+		// if err != nil {
 
-			return Tbluser{}, "", false, nil
-		}
+		// 	return Tbluser{}, "", false, nil
+		// }
 
-		err = Authmodel.UpdateS3FolderName(tenantID, userdet.Id, s3Path, auth.DB)
+		// err = Authmodel.UpdateS3FolderName(tenantID, userdet.Id, s3Path, auth.DB)
 
-		if err != nil {
+		// if err != nil {
 
-			return Tbluser{}, "", false, nil
-		}
+		// 	return Tbluser{}, "", false, nil
+		// }
 
 	}
 
@@ -479,21 +479,21 @@ func (auth *Auth) CheckWebAuth(login *SocialLogin) (string, Tbluser, bool, error
 		userinfo.TenantId = tenantID
 
 		//To create a aws bucket for each tenant
-		var s3FolderName = userinfo.Username + "_" + strconv.Itoa(tenantID)
+		// var s3FolderName = userinfo.Username + "_" + strconv.Itoa(tenantID)
 
-		s3Path, err := CreateFolderToS3(s3FolderName, "/", auth)
+		// s3Path, err := CreateFolderToS3(s3FolderName, "/", auth)
 
-		if err != nil {
+		// if err != nil {
 
-			return "", Tbluser{}, false, nil
-		}
+		// 	return "", Tbluser{}, false, nil
+		// }
 
-		err = Authmodel.UpdateS3FolderName(tenantID, userinfo.Id, s3Path, auth.DB)
+		// err = Authmodel.UpdateS3FolderName(tenantID, userinfo.Id, s3Path, auth.DB)
 
-		if err != nil {
+		// if err != nil {
 
-			return "", Tbluser{}, false, nil
-		}
+		// 	return "", Tbluser{}, false, nil
+		// }
 
 	}
 
