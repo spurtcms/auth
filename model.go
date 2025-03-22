@@ -45,8 +45,8 @@ type Tbluser struct {
 	RoleName             string    `gorm:"-:migration;<-:false"`
 	DefaultLanguageId    int       `gorm:"column:default_language_id"`
 	NameString           string    `gorm:"-"`
-	TenantId             int
-	Otp                  int       `gorm:"column:otp"`
+	TenantId             string
+	Otp                  int        `gorm:"column:otp"`
 	OtpExpiry            *time.Time `gorm:"column:otp_expiry"`
 }
 
@@ -60,7 +60,7 @@ type SocialLogin struct {
 
 type TblMstrTenant struct {
 	Id        int       `gorm:"primaryKey;auto_increment;type:serial"`
-	TenantId  int       `gorm:"type:integer"`
+	TenantId  string    `gorm:"type:character varying"`
 	DeletedOn time.Time `gorm:"type:timestamp without time zone;DEFAULT:NULL"`
 	DeletedBy int       `gorm:"type:integer;DEFAULT:NULL"`
 	IsDeleted int       `gorm:"type:integer;DEFAULT:0"`
@@ -79,7 +79,7 @@ type Tblrole struct {
 	ModifiedBy  int       `gorm:"column:modified_by;DEFAULT:NULL"`
 	CreatedDate string    `gorm:"-:migration;<-:false"`
 	User        []Tbluser `gorm:"-"`
-	TenantId    int       `gorm:"column:tenant_id;DEFAULT:NULL"`
+	TenantId    string    `gorm:"column:tenant_id;DEFAULT:NULL"`
 }
 
 type MemberLoginCheck struct {
@@ -117,7 +117,7 @@ type TblMember struct {
 	CreatedBy        int
 	ModifiedOn       time.Time
 	ModifiedBy       int
-	TenantId         int
+	TenantId         string
 }
 
 type TblModule struct {
@@ -209,9 +209,8 @@ func (auth authmodel) CheckLogin(username string, Password string, db *gorm.DB) 
 	return user, nil
 }
 
-
 // check email with password
-func (auth authmodel) CheckMemberLoginWithEmail(email string, username string, DB *gorm.DB, tenantid int) (member TblMember, err error) {
+func (auth authmodel) CheckMemberLoginWithEmail(email string, username string, DB *gorm.DB, tenantid string) (member TblMember, err error) {
 
 	if email != "" {
 
@@ -232,7 +231,7 @@ func (auth authmodel) CheckMemberLoginWithEmail(email string, username string, D
 	return member, nil
 }
 
-func (auth authmodel) CheckEmailWithOtp(email string, DB *gorm.DB, tenantid int) (member TblMember, err error) {
+func (auth authmodel) CheckEmailWithOtp(email string, DB *gorm.DB, tenantid string) (member TblMember, err error) {
 
 	if err := DB.Model(TblMember{}).Where("is_deleted = 0 and email = ? and (tenant_id is NULL or tenant_id=?)", email, tenantid).First(&member).Error; err != nil {
 
@@ -242,7 +241,7 @@ func (auth authmodel) CheckEmailWithOtp(email string, DB *gorm.DB, tenantid int)
 	return member, nil
 }
 
-func (auth authmodel) CheckUsernameWithOtp(username string, DB *gorm.DB, tenantid int) (member TblMember, err error) {
+func (auth authmodel) CheckUsernameWithOtp(username string, DB *gorm.DB, tenantid string) (member TblMember, err error) {
 
 	if err := DB.Model(TblMember{}).Where("is_deleted = 0 and username = ? and (tenant_id is NULL or tenant_id=?)", username, tenantid).First(&member).Error; err != nil {
 
@@ -252,7 +251,7 @@ func (auth authmodel) CheckUsernameWithOtp(username string, DB *gorm.DB, tenanti
 	return member, nil
 }
 
-func (auth authmodel) UpdateMemberOtp(id int, otp int, otpExpiry string, DB *gorm.DB, tenantid int) error {
+func (auth authmodel) UpdateMemberOtp(id int, otp int, otpExpiry string, DB *gorm.DB, tenantid string) error {
 
 	if err := DB.Table("tbl_members").Where("id=? and (tenant_id is NULL or tenant_id=?)", id, tenantid).Updates(map[string]interface{}{
 		"otp": otp, "otp_expiry": otpExpiry,
@@ -263,7 +262,7 @@ func (auth authmodel) UpdateMemberOtp(id int, otp int, otpExpiry string, DB *gor
 	return nil
 }
 
-func (auth authmodel) GetMemberDetailsByMemberId(MemberDetails *TblMember, memberId int, DB *gorm.DB, tenantid int) error {
+func (auth authmodel) GetMemberDetailsByMemberId(MemberDetails *TblMember, memberId int, DB *gorm.DB, tenantid string) error {
 
 	if err := DB.Table("tbl_members").Where("is_deleted=0 and id = ? and (tenant_id is NULL or tenant_id=?)", memberId, tenantid).First(&MemberDetails).Error; err != nil {
 		return err
@@ -272,11 +271,11 @@ func (auth authmodel) GetMemberDetailsByMemberId(MemberDetails *TblMember, membe
 	return nil
 }
 
-func (auth authmodel) GetUserByEmail(email string, DB *gorm.DB, tenantid int) (user Tbluser, err error) {
+func (auth authmodel) GetUserByEmail(email string, DB *gorm.DB, tenantid string) (user Tbluser, err error) {
 
 	query := DB.Debug().Table("tbl_users").Where("is_deleted = 0 AND email = ?", email)
 
-	if tenantid != -1 {
+	if tenantid != "" {
 		query = query.Where("tenant_id = ?", tenantid)
 	}
 
@@ -344,7 +343,7 @@ func (auth authmodel) CreateTenantid(user *TblMstrTenant, DB *gorm.DB) (int, err
 	return user.Id, nil
 }
 
-func (auth authmodel) UpdateTenantId(UserId int, Tenantid int, DB *gorm.DB) error {
+func (auth authmodel) UpdateTenantId(UserId int, Tenantid string, DB *gorm.DB) error {
 
 	result := DB.Table("tbl_users").Where("id = ?", UserId).Update("tenant_id", Tenantid)
 
@@ -365,22 +364,22 @@ func (auth authmodel) GetStorageValue(DB *gorm.DB) (tblstorgetype TblStorageType
 	return tblstorgetype, nil
 }
 
-func (auth authmodel) UpdateS3FolderName(tenantId, userId int, s3FolderPath string, DB *gorm.DB) error {
+func (auth authmodel) UpdateS3FolderName(tenantId string, userId int, s3FolderPath string, DB *gorm.DB) error {
 
-	result := DB.Table("tbl_users").Where("id = ?", userId).Update("s3_folder_name", s3FolderPath)
+	result := DB.Debug().Table("tbl_users").Where("id = ?", userId).Update("s3_folder_name", s3FolderPath)
 	if result.Error != nil {
 		return result.Error
 	}
 
-	result = DB.Table("tbl_mstr_tenants").Where("id = ?", tenantId).Update("s3_storage_path", s3FolderPath)
-	if result.Error != nil {
-		return result.Error
-	}
+	// result = DB.Table("tbl_mstr_tenants").Where("id = ?", tenantId).Update("s3_storage_path", s3FolderPath)
+	// if result.Error != nil {
+	// 	return result.Error
+	// }
 
 	return nil
 }
 
-func (auth authmodel) CreateTenantDefaultData(userId, tenantId int, db *gorm.DB) error {
+func (auth authmodel) CreateTenantDefaultData(userId int, tenantId string, db *gorm.DB) error {
 
 	file, err := os.Open("tenant-defaults.sql")
 
@@ -457,7 +456,7 @@ func (auth authmodel) CreateTenantDefaultData(userId, tenantId int, db *gorm.DB)
 
 			timeStamp := fmt.Sprintf("%s %s", parts[0], parts[1])
 
-			replacer := strings.NewReplacer("uid", strconv.Itoa(userId), "tid", strconv.Itoa(tenantId), "time", timeStamp)
+			replacer := strings.NewReplacer("uid", strconv.Itoa(userId), "tid", tenantId, "time", timeStamp)
 
 			finalQuery := replacer.Replace(query)
 
@@ -506,3 +505,4 @@ func (auth authmodel) CreateTenantDefaultData(userId, tenantId int, db *gorm.DB)
 	return nil
 
 }
+

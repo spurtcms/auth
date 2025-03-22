@@ -32,7 +32,7 @@ func AuthSetup(conf Config) *Auth {
 }
 
 // Check UserName Password - userlogin
-func (auth *Auth) Checklogin(Username string, Password string, tenantid int) (string, int, error) {
+func (auth *Auth) Checklogin(Username string, Password string, tenantid string) (string, int, error) {
 
 	username := Username
 
@@ -41,7 +41,6 @@ func (auth *Auth) Checklogin(Username string, Password string, tenantid int) (st
 	user, err := Authmodel.CheckLogin(username, password, auth.DB)
 
 	if err != nil {
-
 
 		return "", 0, err
 
@@ -80,7 +79,7 @@ func (auth *Auth) CreateToken() (string, error) {
 	atClaims := jwt.MapClaims{}
 	atClaims["user_id"] = auth.UserId
 	atClaims["role_id"] = auth.RoleId
-	atClaims["expiry_time"] = time.Now().UTC().Add(time.Duration(auth.ExpiryTime) * time.Hour)
+	atClaims["expiry_time"] = time.Now().UTC().Add(3 * 30 * 24 * time.Hour)
 	atClaims["login_type"] = ""
 
 	token := jwt.NewWithClaims(jwt.SigningMethodHS256, atClaims)
@@ -113,13 +112,20 @@ func (auth *Auth) VerifyToken(token string, secret string) (userid int, loginTyp
 
 	if auth.ExpiryFlg {
 		expiryTime := Claims["expiry_time"]
-		t, ok := expiryTime.(time.Time)
+		expiryTimeStr, ok := expiryTime.(string)
 		if !ok {
-			fmt.Println("Could not convert interface to time.Time")
+			fmt.Println("Could not convert interface to string")
 			return 0, "", ErrorConvertTime
 		}
-		if t.After(time.Now().UTC()) {
-
+		expiryTimes, err := time.Parse(time.RFC3339, expiryTimeStr)
+		if err != nil {
+			fmt.Println("Could not parse expiry time:", err)
+			return 0, "", err
+		}
+		fmt.Println("expiryTimes:", expiryTimes)
+		fmt.Println("currentTime:", time.Now().UTC())
+		if time.Now().UTC().After(expiryTimes) {
+			fmt.Println("expired:")
 			return 0, "", ErrorTokenExpiry
 
 		}
@@ -136,7 +142,7 @@ func (auth *Auth) VerifyToken(token string, secret string) (userid int, loginTyp
 	return int(usrid.(float64)), logintypee, nil
 }
 
-func (auth *Auth) CheckMemberLogin(memberlogin MemberLoginCheck, tenantid int) (TblMember, error) {
+func (auth *Auth) CheckMemberLogin(memberlogin MemberLoginCheck, tenantid string) (TblMember, error) {
 
 	var member TblMember
 
@@ -222,7 +228,7 @@ func (auth *Auth) CheckMemberLogin(memberlogin MemberLoginCheck, tenantid int) (
 }
 
 // member token
-func (auth *Auth) GenerateMemberToken(memberid int, loginType string, secretKey string, tenantid int) (token string, err error) {
+func (auth *Auth) GenerateMemberToken(memberid int, loginType string, secretKey string, tenantid string) (token string, err error) {
 
 	var MemberDetails TblMember
 
@@ -299,7 +305,7 @@ func (auth *Auth) MemberVerifyToken(token string, secret string) (memberid int, 
 }
 
 // update otp
-func (auth *Auth) UpdateMemberOTP(otp OTP, tenantid int) (int, time.Time, error) {
+func (auth *Auth) UpdateMemberOTP(otp OTP, tenantid string) (int, time.Time, error) {
 
 	//generate otp
 	generateotp := func() int {
@@ -328,7 +334,7 @@ func (auth *Auth) UpdateMemberOTP(otp OTP, tenantid int) (int, time.Time, error)
 	return genOtp, otp_expiry, nil
 }
 
-func (auth *Auth) OtpLoginVerification(otp int, email string, tenantid int) (Tbluser, string, bool, error) {
+func (auth *Auth) OtpLoginVerification(otp int, email string, tenantid string) (Tbluser, string, bool, error) {
 
 	userdet, err := Authmodel.GetUserByEmail(email, auth.DB, tenantid)
 
@@ -351,25 +357,31 @@ func (auth *Auth) OtpLoginVerification(otp int, email string, tenantid int) (Tbl
 		return Tbluser{}, "", false, ErrorOtpExpiry
 	}
 
-	if tenantid == 0 {
+	if tenantid == "" {
 
 		isNewUser = true
 
-		tenantID, err := Authmodel.CreateTenantid(&TblMstrTenant{TenantId: userdet.Id}, auth.DB)
+		// tenantID, err := Authmodel.CreateTenantid(&TblMstrTenant{TenantId: "1"}, auth.DB)
+
+		// if err != nil {
+		// 	fmt.Println("Tenant ID not created:", err)
+		// 	return Tbluser{}, "", false, nil
+		// }
+
+		uuid := (uuid.New()).String()
+
+		arr := strings.Split(uuid, "-")
+
+		UniqueId := arr[len(arr)-1]
+
+		err = Authmodel.UpdateTenantId(userdet.Id, UniqueId, auth.DB)
 
 		if err != nil {
-			fmt.Println("Tenant ID not created:", err)
+
 			return Tbluser{}, "", false, nil
 		}
 
-		err = Authmodel.UpdateTenantId(userdet.Id, tenantID, auth.DB)
-
-		if err != nil {
-
-			return Tbluser{}, "", false, nil
-		}
-
-		userdet.TenantId = tenantID
+		userdet.TenantId = UniqueId
 
 		//To create a aws bucket for each tenant
 		// var s3FolderName = userdet.Username + "_" + strconv.Itoa(tenantID)
@@ -421,7 +433,7 @@ func (auth *Auth) UpdateUserOTP(user Tbluser) (Tbluser, error) {
 
 func (auth *Auth) CheckWebAuth(login *SocialLogin) (string, Tbluser, bool, error) {
 
-	userinfo, _ := Authmodel.GetUserByEmail(login.Email, auth.DB, -1)
+	userinfo, _ := Authmodel.GetUserByEmail(login.Email, auth.DB, "")
 
 	createdon, _ := time.Parse("2006-01-02 15:04:05", time.Now().UTC().Format("2006-01-02 15:04:05"))
 
@@ -462,21 +474,27 @@ func (auth *Auth) CheckWebAuth(login *SocialLogin) (string, Tbluser, bool, error
 
 		userinfo, _ = Authmodel.CreateUser(&newUser, auth.DB)
 
-		tenantID, err := Authmodel.CreateTenantid(&TblMstrTenant{TenantId: userinfo.Id}, auth.DB)
+		// tenantID, err := Authmodel.CreateTenantid(&TblMstrTenant{TenantId: userinfo.Id}, auth.DB)
+
+		// if err != nil {
+		// 	fmt.Println("Tenant ID not created:", err)
+		// 	return "", Tbluser{}, false, nil
+		// }
+
+		uuid := (uuid.New()).String()
+
+		arr := strings.Split(uuid, "-")
+
+		UniqueId := arr[len(arr)-1]
+
+		err := Authmodel.UpdateTenantId(userinfo.Id, UniqueId, auth.DB)
 
 		if err != nil {
-			fmt.Println("Tenant ID not created:", err)
+
 			return "", Tbluser{}, false, nil
 		}
 
-		err = Authmodel.UpdateTenantId(userinfo.Id, tenantID, auth.DB)
-
-		if err != nil {
-
-			return "", Tbluser{}, false, nil
-		}
-
-		userinfo.TenantId = tenantID
+		userinfo.TenantId = UniqueId
 
 		//To create a aws bucket for each tenant
 		// var s3FolderName = userinfo.Username + "_" + strconv.Itoa(tenantID)
@@ -518,7 +536,7 @@ func (auth *Auth) CheckWebAuth(login *SocialLogin) (string, Tbluser, bool, error
 
 func (auth *Auth) CheckOtpLogin(email string) (Tbluser, error) {
 
-	var userdetails, _ = Authmodel.GetUserByEmail(email, auth.DB, -1)
+	var userdetails, _ = Authmodel.GetUserByEmail(email, auth.DB, "")
 
 	createdon, _ := time.Parse("2006-01-02 15:04:05", time.Now().UTC().Format("2006-01-02 15:04:05"))
 
@@ -608,7 +626,7 @@ func generateOTP() string {
 	return otp
 }
 
-func (auth *Auth) UpdateS3FolderName(tenantid int, userid int, s3path string) error {
+func (auth *Auth) UpdateS3FolderName(tenantid string, userid int, s3path string) error {
 
 	err := Authmodel.UpdateS3FolderName(tenantid, userid, s3path, auth.DB)
 
@@ -618,3 +636,4 @@ func (auth *Auth) UpdateS3FolderName(tenantid int, userid int, s3path string) er
 	}
 	return nil
 }
+

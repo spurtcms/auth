@@ -133,3 +133,4 @@ func CreateFolderToS3(foldername string, folderpath string, auth *Auth) (folderP
 
 	return "", errors.New("foldername is empty can't create")
 }
+
