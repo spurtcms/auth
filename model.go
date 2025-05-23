@@ -48,7 +48,7 @@ type Tbluser struct {
 	TenantId             string
 	Otp                  int        `gorm:"column:otp"`
 	OtpExpiry            *time.Time `gorm:"column:otp_expiry"`
-	Subdomain            string
+	GoTemplateDefault    int        `gorm:"column:go_template_default"`
 }
 
 type SocialLogin struct {
@@ -376,17 +376,6 @@ func (auth authmodel) UpdateS3FolderName(tenantId string, userId int, s3FolderPa
 	// if result.Error != nil {
 	// 	return result.Error
 	// }
-
-	return nil
-}
-
-func (auth authmodel) UpdateSubDomain(id int, subdomain string, DB *gorm.DB) error {
-
-	result := DB.Table("tbl_users").Where("id = ?", id).Update("subdomain", subdomain)
-
-	if result.Error != nil {
-		return result.Error
-	}
 
 	return nil
 }

@@ -401,14 +401,7 @@ func (auth *Auth) OtpLoginVerification(otp int, email string, tenantid string) (
 		// }
 
 	}
-	subdomain := strings.ToLower(userdet.FirstName) + strconv.Itoa(userdet.Id)
 
-	err1 := Authmodel.UpdateSubDomain(userdet.Id, subdomain, auth.DB)
-
-	if err1 != nil {
-
-		return Tbluser{}, "", false, nil
-	}
 	auth.UserId = userdet.Id
 
 	auth.RoleId = userdet.RoleId
@@ -477,6 +470,7 @@ func (auth *Auth) CheckWebAuth(login *SocialLogin) (string, Tbluser, bool, error
 			DefaultLanguageId: 1,
 			Uuid:              uvuid,
 			RoleId:            newRoleId,
+			GoTemplateDefault: 1,
 		}
 
 		userinfo, _ = Authmodel.CreateUser(&newUser, auth.DB)
@@ -521,14 +515,7 @@ func (auth *Auth) CheckWebAuth(login *SocialLogin) (string, Tbluser, bool, error
 		// }
 
 	}
-	subdomain := strings.ToLower(userinfo.FirstName) + strconv.Itoa(userinfo.Id)
 
-	err1 := Authmodel.UpdateSubDomain(userinfo.Id, subdomain, auth.DB)
-
-	if err1 != nil {
-
-		return "", Tbluser{}, false, nil
-	}
 	if userinfo.IsActive == 0 {
 
 		return "", Tbluser{}, false, ErrorInactive
@@ -585,6 +572,7 @@ func (auth *Auth) CheckOtpLogin(email string) (Tbluser, error) {
 			DefaultLanguageId: 1,
 			Uuid:              uvuid,
 			RoleId:            newRoleId,
+			GoTemplateDefault: 1,
 		}
 
 		userdetails, _ = Authmodel.CreateUser(&newUser, auth.DB)
