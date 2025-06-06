@@ -383,32 +383,22 @@ func (auth *Auth) OtpLoginVerification(otp int, email string, tenantid string) (
 
 		userdet.TenantId = UniqueId
 
-		//To create a aws bucket for each tenant
-		// var s3FolderName = userdet.Username + "_" + strconv.Itoa(tenantID)
-
-		// s3Path, err := CreateFolderToS3(s3FolderName, "/", auth)
-
-		// if err != nil {
-
-		// 	return Tbluser{}, "", false, nil
-		// }
-
-		// err = Authmodel.UpdateS3FolderName(tenantID, userdet.Id, s3Path, auth.DB)
-
-		// if err != nil {
-
-		// 	return Tbluser{}, "", false, nil
-		// }
-
 	}
-	subdomain := strings.ToLower(userdet.FirstName) + strconv.Itoa(userdet.Id)
+	var subdomain string
 
-	err1 := Authmodel.UpdateSubDomain(userdet.Id, subdomain, auth.DB)
+	if userdet.Subdomain == "" {
 
-	if err1 != nil {
+		subdomain = strings.ToLower(userdet.FirstName) + strconv.Itoa(userdet.Id)
 
-		return Tbluser{}, "", false, nil
+		err1 := Authmodel.UpdateSubDomain(userdet.Id, subdomain, auth.DB)
+
+		if err1 != nil {
+
+			return Tbluser{}, "", false, nil
+		}
+		userdet.Subdomain = subdomain
 	}
+
 	auth.UserId = userdet.Id
 
 	auth.RoleId = userdet.RoleId
@@ -482,13 +472,6 @@ func (auth *Auth) CheckWebAuth(login *SocialLogin) (string, Tbluser, bool, error
 
 		userinfo, _ = Authmodel.CreateUser(&newUser, auth.DB)
 
-		// tenantID, err := Authmodel.CreateTenantid(&TblMstrTenant{TenantId: userinfo.Id}, auth.DB)
-
-		// if err != nil {
-		// 	fmt.Println("Tenant ID not created:", err)
-		// 	return "", Tbluser{}, false, nil
-		// }
-
 		uuid := (uuid.New()).String()
 
 		arr := strings.Split(uuid, "-")
@@ -504,32 +487,23 @@ func (auth *Auth) CheckWebAuth(login *SocialLogin) (string, Tbluser, bool, error
 
 		userinfo.TenantId = UniqueId
 
-		//To create a aws bucket for each tenant
-		// var s3FolderName = userinfo.Username + "_" + strconv.Itoa(tenantID)
-
-		// s3Path, err := CreateFolderToS3(s3FolderName, "/", auth)
-
-		// if err != nil {
-
-		// 	return "", Tbluser{}, false, nil
-		// }
-
-		// err = Authmodel.UpdateS3FolderName(tenantID, userinfo.Id, s3Path, auth.DB)
-
-		// if err != nil {
-
-		// 	return "", Tbluser{}, false, nil
-		// }
-
 	}
-	subdomain := strings.ToLower(userinfo.FirstName) + strconv.Itoa(userinfo.Id)
 
-	err1 := Authmodel.UpdateSubDomain(userinfo.Id, subdomain, auth.DB)
+	var subdomain string
 
-	if err1 != nil {
+	if userinfo.Subdomain == "" {
 
-		return "", Tbluser{}, false, nil
+		subdomain = strings.ToLower(userinfo.FirstName) + strconv.Itoa(userinfo.Id)
+
+		err1 := Authmodel.UpdateSubDomain(userinfo.Id, subdomain, auth.DB)
+
+		if err1 != nil {
+
+			return "", Tbluser{}, false, nil
+		}
+		userinfo.Subdomain = subdomain
 	}
+
 	if userinfo.IsActive == 0 {
 
 		return "", Tbluser{}, false, ErrorInactive
