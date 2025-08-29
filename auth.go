@@ -387,8 +387,9 @@ func (auth *Auth) OtpLoginVerification(otp int, email string, tenantid string) (
 	var subdomain string
 
 	if userdet.Subdomain == "" {
+		newusername := strings.ReplaceAll(userdet.FirstName, ".", "")
 
-		subdomain = strings.ToLower(userdet.FirstName) + strconv.Itoa(userdet.Id)
+		subdomain = strings.ToLower(newusername) + strconv.Itoa(userdet.Id)
 
 		err1 := Authmodel.UpdateSubDomain(userdet.Id, subdomain, auth.DB)
 
@@ -493,7 +494,9 @@ func (auth *Auth) CheckWebAuth(login *SocialLogin) (string, Tbluser, bool, error
 
 	if userinfo.Subdomain == "" {
 
-		subdomain = strings.ToLower(userinfo.FirstName) + strconv.Itoa(userinfo.Id)
+		newusername := strings.ReplaceAll(userinfo.FirstName, ".", "")
+
+		subdomain = strings.ToLower(newusername) + strconv.Itoa(userinfo.Id)
 
 		err1 := Authmodel.UpdateSubDomain(userinfo.Id, subdomain, auth.DB)
 
